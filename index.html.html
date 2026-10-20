@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>ARDF 3D 코스 리뷰</title>
+    <!-- Mapbox 3D 라이브러리 -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <style>
+        body { margin: 0; font-family: '맑은 고딕', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #1a252f; }
+        
+        /* 좌측 사이드바 */
+        #sidebar { 
+            width: 320px; min-width: 320px;
+            background: #2c3e50; color: #ecf0f1; 
+            padding: 18px; display: flex; flex-direction: column; 
+            gap: 12px; box-shadow: 4px 0 16px rgba(0,0,0,0.4);
+            z-index: 20; overflow-y: auto;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+        }
+        #sidebar.collapsed { margin-left: -320px; }
+
+        /* 5px 슬림 스크롤바 */
+        #sidebar::-webkit-scrollbar,
+        #runner-list-box::-webkit-scrollbar,
+        #tx-list-box::-webkit-scrollbar,
+        #top-scoreboard-bar::-webkit-scrollbar { width: 5px; }
+        #sidebar::-webkit-scrollbar-track,
+        #runner-list-box::-webkit-scrollbar-track,
+        #tx-list-box::-webkit-scrollbar-track,
+        #top-scoreboard-bar::-webkit-scrollbar-track { background: transparent; }
+        #sidebar::-webkit-scrollbar-button,
+        #runner-list-box::-webkit-scrollbar-button,
+        #tx-list-box::-webkit-scrollbar-button,
+        #top-scoreboard-bar::-webkit-scrollbar-button { display: none !important; }
+        #sidebar::-webkit-scrollbar-thumb,
+        #runner-list-box::-webkit-scrollbar-thumb,
+        #tx-list-box::-webkit-scrollbar-thumb,
+        #top-scoreboard-bar::-webkit-scrollbar-thumb {
+            background: transparent; border-radius: 4px; transition: background 0.3s;
+        }
+        #sidebar:hover::-webkit-scrollbar-thumb,
+        #runner-list-box:hover::-webkit-scrollbar-thumb,
+        #tx-list-box:hover::-webkit-scrollbar-thumb,
+        #top-scoreboard-bar:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: #e74c3c !important; }
+
+        /* 상단 헤더 스티키 고정 */
+        .sidebar-header {
+            position: sticky;
+            top: -18px;
+            background: #2c3e50;
+            z-index: 30;
+            margin: -18px -18px 4px -18px;
+            padding: 18px 18px 8px 18px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #34495e;
+        }
+        .sidebar-header h2 { margin: 0; font-size: 1.25rem; color: #fff; }
+        #btn-sidebar-close {
+            background: #243342; border: 1px solid #7f8c8d; color: #bdc3c7;
+            width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+            font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        #btn-sidebar-close:hover { background: #e74c3c; color: #ffffff; border-color: #ffffff; }
+
+        /* 지도 위 메뉴 열기 버튼 [ ☰ ] */
+        #btn-menu-open {
+            position: absolute; top: 16px; left: 16px;
+            width: 42px; height: 42px;
+            background: #243342; border: 2px solid #7f8c8d;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer; z-index: 10;
+            display: none; align-items: center; justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #btn-menu-open:hover {
+            background: #e74c3c; border-color: #ffffff;
+            transform: scale(1.06); box-shadow: 0 6px 18px rgba(231, 76, 60, 0.5);
+        }
+
+        /* 플로팅 검색바 */
+        #map-search-bar {
+            position: absolute; top: 16px; left: 16px;
+            display: flex; align-items: center; z-index: 10;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.22);
+            border: 1px solid rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar.collapsed + #map-container #map-search-bar { left: 68px; }
+        #map-search-input {
+            width: 200px; padding: 8px 12px; border: none;
+            background: transparent; color: #2c3e50;
+            font-size: 0.85rem; outline: none;
+        }
+        #map-search-input::placeholder { color: #95a5a6; font-size: 0.8rem; }
+        #btn-map-search {
+            background: transparent; color: #7f8c8d; border: none;
+            padding: 8px 12px; cursor: pointer;
+            font-size: 0.95rem; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            transition: color 0.2s, background 0.2s;
+        }
+        #btn-map-search:hover { color: #e74c3c; background: #f8f9fa; }
+
+        /* 지도 스타일 바 */
+        #style-switch-wrap {
+            position: absolute; top: 16px; right: 16px;
+            z-index: 15;
+            display: flex;
+            background: rgba(36, 51, 66, 0.92);
+            backdrop-filter: blur(6px);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        }
+        #style-switch-wrap input[type="radio"] { display: none; }
+        #style-switch-wrap label {
+            padding: 5px 8px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            color: #bdc3c7;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            white-space: nowrap;
+            user-select: none;
+        }
+        #style-switch-wrap label:last-child { border-right: none; }
+        #style-switch-wrap input[type="radio"]:checked + label {
+            background: #e74c3c;
+            color: #ffffff;
+        }
+        #style-switch-wrap input[type="radio"]:disabled + label {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: transparent;
+            color: #7f8c8d;
+        }
+
+        /* 초슬림 선수 콜사인 미니 태그 */
+        #top-scoreboard-bar {
+            position: absolute; top: 52px; right: 16px;
+            display: flex; flex-direction: column;
+            align-items: flex-end; gap: 5px; z-index: 14;
+            max-height: calc(100vh - 120px); overflow-y: auto;
+        }
+        .runner-score-card {
+            position: relative;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(36, 51, 66, 0.9);
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            padding: 3px 10px 3px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+        .runner-score-card:hover {
+            background: rgba(44, 62, 80, 0.98);
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+        .card-color-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .card-callsign {
+            font-weight: 800; font-size: 0.78rem; color: #ffffff;
+            letter-spacing: 0.3px; white-space: nowrap;
+        }
+        .card-stats {
+            font-size: 0.7rem; color: #bdc3c7; white-space: nowrap;
+            max-width: 0; opacity: 0; overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .runner-score-card:hover .card-stats {
+            max-width: 140px; opacity: 1;
+            margin-left: 4px; padding-left: 6px;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-group { background: #34495e; padding: 12px 14px; border-radius: 8px; }
+        label.section-title { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.85rem; color: #bdc3c7; }
+        select, input[type="file"], input[type="text"] { width: 100%; padding: 7px; border-radius: 4px; border: 1px solid #7f8c8d; background: #fff; color: #333; font-size: 0.85rem; box-sizing: border-box; }
+
+        /* 토글 모드 스위치 */
+        .mode-switch { display: flex; background: #243342; border-radius: 4px; border: 1px solid #7f8c8d; overflow: hidden; flex-wrap: wrap; }
+        .mode-switch input[type="radio"] { display: none; }
+        .mode-switch label { 
+            flex: 1 1 50%; min-width: 50%; text-align: center; padding: 7px 0; 
+            cursor: pointer; font-size: 0.78rem; color: #bdc3c7; 
+            transition: all 0.2s ease; box-sizing: border-box; 
+            border-right: 1px solid #34495e; border-bottom: 1px solid #34495e;
+        }
+        .mode-switch input[type="radio"]:checked + label { background: #e74c3c; color: white; font-weight: bold; }
+        .mode-switch input[type="radio"]:disabled + label { opacity: 0.35; cursor: not-allowed; background: #1a252f; color: #7f8c8d; }
+
+        /* 버튼 */
+        .btn-action {
+            display: block; width: 100%; text-align: center; background: #27ae60;
+            color: #fff; padding: 8px 0; border-radius: 4px; cursor: pointer;
+            font-weight: bold; font-size: 0.85rem; border: none; transition: background 0.2s;
+        }
+        .btn-action:hover { background: #2ecc71; }
+        .btn-sub-action {
+            display: block; width: 100%; text-align: center; background: #8e44ad;
+            color: #fff; padding: 7px 0; border-radius: 4px; cursor: pointer;
+            font-weight: bold; font-size: 0.8rem; border: none; margin-top: 6px;
+        }
+        .btn-sub-action:hover { background: #9b59b6; }
+
+        .btn-del-item {
+            background: #c0392b; color: white; border: none; width: 22px; height: 22px;
+            border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .btn-del-item:hover { background: #e74c3c; }
+
+        /* 선수 목록 */
+        #runner-list-box { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .runner-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #243342; padding: 6px 8px 6px 10px; border-radius: 4px; 
+            font-size: 0.8rem; border-left: 4px solid #fff; 
+        }
+        .runner-info-wrap { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+        .runner-name-tag { font-weight: bold; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+        .runner-stats-tag { color: #bdc3c7; font-size: 0.72rem; }
+
+        /* TX 배치 그리드 */
+        .tx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+        .btn-tx-pick {
+            background: #243342; color: #ecf0f1; border: 1px solid #7f8c8d;
+            border-radius: 4px; padding: 6px 0; font-size: 0.76rem; font-weight: bold;
+            cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .btn-tx-pick:hover { background: #34495e; color: #f1c40f; }
+        .btn-tx-pick.active { background: #8e44ad; color: #fff; border-color: #9b59b6; box-shadow: 0 0 8px rgba(155,89,182,0.8); }
+
+        #tx-list-box { max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+        .tx-list-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #243342; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;
+            border-left: 3px solid #9b59b6;
+        }
+
+        /* 슬라이더 컨트롤 */
+        .slider-wrap { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+        .slider-wrap input[type="range"] { flex-grow: 1; cursor: pointer; }
+        .slider-value { width: 45px; text-align: right; font-weight: bold; color: #e67e22; font-size: 0.82rem; }
+
+        /* 미세 조정 박스 */
+        #map-fine-tuning { display: none; flex-direction: column; gap: 6px; margin-top: 10px; border-top: 1px solid #4a6278; padding-top: 8px; }
+        .tuning-label { font-size: 0.75rem; color: #bdc3c7; margin-bottom: 2px; }
+
+        /* 중앙 지도 영역 */
+        #map-container { flex-grow: 1; height: 100%; position: relative; }
+
+        /* 지도 상단 대화형 안내 배너 (버튼 탑재) */
+        #guide-banner {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(26, 37, 47, 0.96); color: #ffffff;
+            padding: 8px 18px; border-radius: 30px; font-size: 0.9rem; font-weight: 800;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.55); z-index: 100; display: none;
+            align-items: center; gap: 10px; border: 2px solid #f39c12;
+            transition: all 0.3s ease; max-width: 92%; flex-wrap: wrap; justify-content: center;
+        }
+        .step-badge {
+            display: inline-block; padding: 3px 9px; border-radius: 6px;
+            font-size: 0.8rem; font-weight: 900; letter-spacing: 0.5px;
+            color: #fff;
+        }
+        .badge-step1 { background: #e74c3c; }
+        .badge-step2 { background: #3498db; }
+        .badge-step3 { background: #e67e22; }
+        .badge-step4 { background: #2ecc71; }
+
+        @keyframes banner-pop {
+            0% { transform: translateX(-50%) scale(0.92); }
+            50% { transform: translateX(-50%) scale(1.04); }
+            100% { transform: translateX(-50%) scale(1.0); }
+        }
+        .banner-pulse-anim {
+            animation: banner-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-banner-sub {
+            background: #34495e; border: 1px solid rgba(255,255,255,0.3); color: #ecf0f1;
+            padding: 4px 10px; border-radius: 14px; cursor: pointer; font-size: 0.78rem; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-banner-sub:hover { background: #4a6278; }
+        .btn-banner-main {
+            background: #27ae60; border: none; color: #fff;
+            padding: 5px 14px; border-radius: 14px; cursor: pointer; font-size: 0.82rem; font-weight: 900;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: background 0.2s, transform 0.1s;
+        }
+        .btn-banner-main:hover { background: #2ecc71; transform: scale(1.04); }
+
+        #btn-cancel-guide {
+            background: #c0392b; border: none; color: white; padding: 4px 12px;
+            border-radius: 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+        }
+        #btn-cancel-guide:hover { background: #e74c3c; }
+
+        /* 실제 지도 위 2점 마커 핀 (드래그 가능) */
+        .map-geo-pin {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 3px solid #ffffff; color: #ffffff;
+            font-weight: 900; font-size: 13px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.85); cursor: grab;
+            user-select: none;
+            animation: pin-drop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .map-geo-pin:active { cursor: grabbing; }
+
+        /* 22px 솔리드 화살표 마커 */
+        .runner-marker-container {
+            position: relative;
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none;
+        }
+
+        /* 3px 도톰한 레이더 파동 펄스 링 */
+        .runner-pulse {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border-width: 3px;
+            border-style: solid;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 1;
+            animation: radar-wave 1.8s infinite cubic-bezier(0.2, 0.6, 0.35, 1);
+        }
+        @keyframes radar-wave {
+            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.7; }
+            70% { opacity: 0.18; }
+            100% { transform: translate(-50%, -50%) scale(1.85); opacity: 0; }
+        }
+
+        /* 화살표 꼭지점 머리 위로 밀착된 투명 텍스트 */
+        .runner-badge {
+            position: absolute;
+            bottom: 100%; left: 50%;
+            transform: translateX(-50%) translateY(0);
+            background: transparent; color: #ffffff;
+            font-size: 11px; font-weight: 900; padding: 0;
+            border: none;
+            margin-bottom: 1px; white-space: nowrap;
+            text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 6px rgba(0,0,0,0.95);
+            letter-spacing: 0.4px;
+            opacity: 1; pointer-events: none;
+            z-index: 10;
+        }
+
+        .runner-arrow-wrap {
+            position: relative; z-index: 2;
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.85));
+            transition: transform 0.15s ease;
+        }
+        .runner-marker-container:hover .runner-arrow-wrap { transform: scale(1.15); }
+        .runner-arrow-inner {
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            transform-origin: center center;
+        }
+
+        .iof-tx-marker {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(142, 68, 173, 0.85); border: 2.5px solid #ffffff;
+            color: #ffffff; font-weight: 900; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.7); cursor: pointer;
+        }
+        .iof-start-marker {
+            width: 0; height: 0;
+            border-left: 13px solid transparent; border-right: 13px solid transparent;
+            border-bottom: 24px solid #8e44ad; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+            cursor: pointer;
+        }
+
+        /* 하단 미니 슬림 플레이어 */
+        #player-bar {
+            position: absolute; bottom: 25px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(33, 47, 61, 0.95); backdrop-filter: blur(6px);
+            padding: 8px 18px; border-radius: 35px;
+            display: none; align-items: center; gap: 12px;
+            color: #ecf0f1; box-shadow: 0 8px 25px rgba(0,0,0,0.45);
+            z-index: 5;
+        }
+        #btn-play {
+            background: #e74c3c; color: white; border: none;
+            width: 36px; height: 36px; border-radius: 50%;
+            font-size: 1rem; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s, background 0.15s;
+        }
+        #btn-play:hover { background: #ff5252; transform: scale(1.05); }
+        #timeline { width: 300px; cursor: pointer; accent-color: #e74c3c; }
+        #speed-select { background: #243342; color: white; border: 1px solid #7f8c8d; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; }
+
+        /* 2점 정합 모달 뷰포트 */
+        #geo-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); z-index: 200; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        #geo-modal-box {
+            background: #2c3e50; border-radius: 10px; padding: 18px; width: 88vw; max-width: 960px;
+            height: 84vh; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+        }
+        #geo-modal-header { display: flex; justify-content: space-between; align-items: center; color: #fff; flex-wrap: wrap; gap: 8px; }
+        #geo-step-title {
+            font-weight: 800; font-size: 1.02rem; color: #f1c40f;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .btn-modal-sub {
+            background: #34495e; border: 1px solid rgba(255,255,255,0.3); color: #ecf0f1;
+            padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-modal-sub:hover { background: #4a6278; }
+        .btn-modal-action {
+            background: #27ae60; border: none; color: #fff;
+            padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 0.82rem; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-modal-action:hover { background: #2ecc71; }
+
+        #geo-canvas-wrap {
+            flex-grow: 1; position: relative; overflow: hidden;
+            background: #111a22; border-radius: 6px;
+            cursor: crosshair; user-select: none;
+        }
+
+        #geo-stage {
+            position: absolute; top: 0; left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        #geo-canvas-img {
+            display: block; pointer-events: none;
+            user-select: none; -webkit-user-drag: none;
+        }
+
+        /* 드래그 가능한 종이 지도 핀 */
+        .geo-dot {
+            position: absolute; width: 22px; height: 22px; border-radius: 50%;
+            transform: translate(-50%, -50%); border: 3px solid #fff;
+            font-size: 11px; font-weight: 900; color: white; display: flex;
+            align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.85);
+            z-index: 15; pointer-events: auto; cursor: grab; user-select: none;
+        }
+        .geo-dot:active { cursor: grabbing; }
+
+        #geo-zoom-hint {
+            position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.75); color: #ecf0f1; padding: 5px 14px;
+            border-radius: 15px; font-size: 0.78rem; pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.2); z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 좌측 사이드바 -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>ARDF 3D 코스 리뷰</h2>
+            <button id="btn-sidebar-close" title="사이드바 닫기 (단축키: [)">✕</button>
+        </div>
+        
+        <!-- 1. 분석 모드 -->
+        <div class="control-group">
+            <label class="section-title">1. 분석 모드</label>
+            <div class="mode-switch">
+                <input type="radio" id="mode-gpx" name="work-mode" checked>
+                <label for="mode-gpx" style="border-bottom:none;">GPX 보기</label>
+                <input type="radio" id="mode-ghost" name="work-mode">
+                <label for="mode-ghost" style="border-bottom:none; border-right:none;" title="송신기(S, TX, F)가 배치되면 AI 추천 코스가 계산됩니다">가상 코스</label>
+            </div>
+        </div>
+
+        <!-- 2. 경기 지도 업로드 -->
+        <div class="control-group">
+            <label class="section-title" for="map-upload">2. 경기 지도 업로드</label>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="file" id="map-upload" accept="image/jpeg, image/png">
+                <button id="btn-del-map" class="btn-del-item" style="display: none; width: 34px; height: 32px; font-size: 14px; flex-shrink: 0;" title="지도 삭제">✕</button>
+            </div>
+            
+            <button id="btn-open-geo-modal" class="btn-sub-action" style="display: none;">📍 2점 정밀 맞추기 (정합)</button>
+            
+            <div id="map-fine-tuning">
+                <span class="tuning-label">지도 투명도</span>
+                <div class="slider-wrap">
+                    <input type="range" id="opacity-slider" min="0.1" max="1.0" step="0.05" value="0.85">
+                    <span class="slider-value" id="opacity-val">85%</span>
+                </div>
+                <span class="tuning-label">미세 회전각 (±15°)</span>
+                <div class="slider-wrap">
+                    <input type="range" id="rot-slider" min="-15" max="15" step="0.5" value="0">
+                    <span class="slider-value" id="rot-val">0°</span>
+                </div>
+                <span class="tuning-label">미세 크기 (70% ~ 130%)</span>
+                <div class="slider-wrap">
+                    <input type="range" id="scale-slider" min="0.7" max="1.3" step="0.02" value="1.0">
+                    <span class="slider-value" id="scale-val">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 선수 GPX 추가 -->
+        <div class="control-group" id="gpx-upload-group">
+            <label class="section-title">3. 선수 GPX 추가</label>
+            <input type="file" id="gpx-upload" accept=".gpx" multiple style="display: none;">
+            <button class="btn-action" onclick="document.getElementById('gpx-upload').click()">+ GPX 파일 추가하기</button>
+            <div id="runner-list-box"></div>
+        </div>
+
+        <!-- 4. 경기 종목 (5번 바로 위) -->
+        <div class="control-group">
+            <label class="section-title" for="race-type">4. 경기 종목</label>
+            <select id="race-type">
+                <option value="classic">Classic</option>
+                <option value="foxoring">Foxoring</option>
+                <option value="sprint">Sprint</option>
+            </select>
+        </div>
+
+        <!-- 5. 송신기(TX) 위치 지정 -->
+        <div class="control-group">
+            <label class="section-title">5. 송신기(TX) 위치 지정</label>
+            <div class="tx-grid" id="tx-dynamic-grid"></div>
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <input type="text" id="tx-manual-input" placeholder="위도, 경도 입력 (직접)">
+                <button id="btn-tx-manual" style="width: 50px; background: #34495e; color: #fff; border: 1px solid #7f8c8d; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">등록</button>
+            </div>
+            <div id="tx-list-box"></div>
+        </div>
+
+        <!-- 6. 3D 고도 입체감 -->
+        <div class="control-group">
+            <label class="section-title">6. 3D 고도 입체감</label>
+            <div class="slider-wrap">
+                <input type="range" id="exag-slider" min="1.0" max="5.0" step="0.2" value="3.0">
+                <span class="slider-value" id="exag-val">3.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 중앙 3D 지도 영역 -->
+    <div id="map-container">
+        <!-- 메뉴 열기 버튼 [ ☰ ] -->
+        <button id="btn-menu-open" title="메뉴 열기 [단축키: []" aria-label="메뉴 열기">
+            <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="20" height="2.8" rx="1.4" fill="#ffffff"/>
+                <rect y="6.6" width="20" height="2.8" rx="1.4" fill="#ffffff"/>
+                <rect y="13.2" width="20" height="2.8" rx="1.4" fill="#ffffff"/>
+            </svg>
+        </button>
+
+        <!-- 플로팅 검색바 -->
+        <div id="map-search-bar">
+            <input type="text" id="map-search-input" placeholder="경기장, 지명 검색 (Enter)">
+            <button id="btn-map-search" title="검색">🔍</button>
+        </div>
+
+        <!-- 우측 상단 플로팅 지도 스타일 바 -->
+        <div id="style-switch-wrap">
+            <input type="radio" id="style-topo" name="map-style" value="topo" checked>
+            <label for="style-topo">등고선</label>
+            
+            <input type="radio" id="style-sat" name="map-style" value="sat">
+            <label for="style-sat">위성 3D</label>
+            
+            <input type="radio" id="style-map2d" name="map-style" value="map2d" disabled>
+            <label for="style-map2d" id="lbl-map2d">경기 2D</label>
+            
+            <input type="radio" id="style-map3d" name="map-style" value="map3d" disabled>
+            <label for="style-map3d" id="lbl-map3d">경기 3D</label>
+        </div>
+
+        <!-- 지도 상단 중앙 대화형 안내 배너 (확인/다시/취소 버튼 탑재) -->
+        <div id="guide-banner">
+            <span id="guide-text">안내 메시지</span>
+            <div id="banner-actions" style="display: flex; gap: 6px; align-items: center;">
+                <button id="btn-banner-redo" class="btn-banner-sub" style="display: none;">↺ 다시 찍기</button>
+                <button id="btn-banner-back" class="btn-banner-sub" style="display: none;">◀ 이전 단계</button>
+                <button id="btn-banner-confirm" class="btn-banner-main" style="display: none;">확인</button>
+                <button id="btn-cancel-guide">취소</button>
+            </div>
+        </div>
+
+        <!-- 우측 상단 선수 미니 태그 컨테이너 -->
+        <div id="top-scoreboard-bar"></div>
+
+        <!-- 하단 슬림형 플레이어 -->
+        <div id="player-bar">
+            <button id="btn-play">▶</button>
+            <input type="range" id="timeline" min="0" max="1000" value="0" step="1">
+            <select id="speed-select">
+                <option value="1">1x</option>
+                <option value="5">5x</option>
+                <option value="10" selected>10x</option>
+                <option value="25">25x</option>
+                <option value="50">50x</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 2점 정밀 정합 전용 모달 창 -->
+    <div id="geo-modal">
+        <div id="geo-modal-box">
+            <div id="geo-modal-header">
+                <div id="geo-step-title">
+                    <span class="step-badge badge-step1">1단계</span>
+                    <span>종이 지도를 확대하여 <b>[기준점 1 (출발 △)]</b>을 클릭하세요</span>
+                </div>
+                <div id="geo-header-actions" style="display: flex; gap: 8px; align-items: center;">
+                    <button id="btn-geo-redo1" class="btn-modal-sub" style="display: none;">↺ 1번 다시</button>
+                    <button id="btn-geo-redo2" class="btn-modal-sub" style="display: none;">↺ 2번 다시</button>
+                    <button id="btn-geo-next" class="btn-modal-action" style="display: none;">➔ 2단계 진행</button>
+                    <button id="btn-close-geo" style="background:#c0392b; border:none; color:#fff; padding:5px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">✕ 닫기</button>
+                </div>
+            </div>
+            <div id="geo-canvas-wrap">
+                <div id="geo-stage">
+                    <img id="geo-canvas-img" src="" alt="종이 지도">
+                </div>
+                <div id="geo-zoom-hint">🔍 휠로 확대/축소하고 마우스로 지도를 끌어 이동할 수 있습니다 (핀을 드래그하여 미세조정)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoia29va2luZzAiLCJhIjoiY212ZXBiZjNkMDBuMjJ5cHZ6bHQwZTg3ciJ9.11OKHXg95xnoPWWjipcqYA';
+
+        const PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e84393'];
+        let currentExag = 3.0; // 정확도 : 높음
+
+        const map = new mapboxgl.Map({
+            container: 'map-container',
+            style: 'mapbox://styles/mapbox/outdoors-v12',
+            center: [127.135, 35.852],
+            zoom: 14.2,
+            pitch: 65,
+            bearing: -15
+        });
+
+        function setMapLanguageToKorean() {
+            try {
+                const layers = map.getStyle().layers;
+                if (!layers) return;
+                layers.forEach(layer => {
+                    if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+                        map.setLayoutProperty(layer.id, 'text-field', [
+                            'coalesce',
+                            ['get', 'name_ko'],
+                            ['get', 'name:ko'],
+                            ['get', 'name'],
+                            ['get', 'name_en']
+                        ]);
+                    }
+                });
+            } catch (err) {
+                console.warn('언어 설정 알림:', err);
+            }
+        }
+
+        map.on('style.load', () => {
+            setMapLanguageToKorean();
+
+            map.addSource('mapbox-dem', {
+                'type': 'raster-dem',
+                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                'tileSize': 512,
+                'maxzoom': 14
+            });
+            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+
+            map.addLayer({
+                'id': 'terrain-hillshade',
+                'type': 'hillshade',
+                'source': 'mapbox-dem',
+                'paint': {
+                    'hillshade-exaggeration': 0.85,
+                    'hillshade-shadow-color': '#1a252f',
+                    'hillshade-highlight-color': '#ffffff'
+                }
+            });
+
+            map.addSource('satellite-source', {
+                'type': 'raster',
+                'url': 'mapbox://mapbox.satellite',
+                'tileSize': 512
+            });
+            map.addLayer({
+                'id': 'satellite-layer',
+                'type': 'raster',
+                'source': 'satellite-source',
+                'layout': { 'visibility': 'none' }
+            });
+
+            map.addLayer({
+                'id': 'sky',
+                'type': 'sky',
+                'paint': {
+                    'sky-type': 'atmosphere',
+                    'sky-atmosphere-sun': [0.0, 90.0],
+                    'sky-atmosphere-sun-intensity': 15
+                }
+            });
+
+            // 가상 코스 유도선
+            map.addSource('virtual-course-source', {
+                'type': 'geojson',
+                'data': { 'type': 'FeatureCollection', 'features': [] }
+            });
+            map.addLayer({
+                'id': 'virtual-course-layer',
+                'type': 'line',
+                'source': 'virtual-course-source',
+                'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                'paint': {
+                    'line-color': '#f39c12',
+                    'line-width': 2.5,
+                    'line-dasharray': [4, 3],
+                    'line-opacity': 0.95
+                }
+            });
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+
+        // 사이드바 토글 & 단축키 ([ 키) 제어
+        const sidebar = document.getElementById('sidebar');
+        const btnSidebarClose = document.getElementById('btn-sidebar-close');
+        const btnMenuOpen = document.getElementById('btn-menu-open');
+
+        function toggleSidebar(forceCollapse) {
+            const willCollapse = (typeof forceCollapse === 'boolean') 
+                ? forceCollapse 
+                : !sidebar.classList.contains('collapsed');
+
+            sidebar.classList.toggle('collapsed', willCollapse);
+            btnMenuOpen.style.display = willCollapse ? 'flex' : 'none';
+            setTimeout(() => map.resize(), 320);
+        }
+
+        btnSidebarClose.addEventListener('click', () => toggleSidebar(true));
+        btnMenuOpen.addEventListener('click', () => toggleSidebar(false));
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            if (e.key === '[' || e.key === ']') toggleSidebar();
+        });
+
+        // 지명 검색
+        const mapSearchInput = document.getElementById('map-search-input');
+        const btnMapSearch = document.getElementById('btn-map-search');
+
+        async function searchLocation(query) {
+            const q = query.trim();
+            if (!q) return;
+
+            guideText.textContent = `🔍 '${q}' 위치를 검색 중입니다...`;
+            guideBanner.style.display = 'flex';
+
+            try {
+                const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=kr&limit=1`;
+                let res = await fetch(osmUrl, { headers: { 'Accept-Language': 'ko' } });
+                let data = await res.json();
+
+                if (data && data.length > 0) {
+                    const best = data[0];
+                    const lat = parseFloat(best.lat);
+                    const lng = parseFloat(best.lon);
+                    const name = best.name || best.display_name.split(',')[0];
+
+                    map.flyTo({ center: [lng, lat], zoom: 14.5, duration: 1800, essential: true });
+                    guideText.textContent = `📍 [${name}] 위치로 이동했습니다`;
+                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                    return;
+                }
+
+                const center = map.getCenter();
+                const mbUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${mapboxgl.accessToken}&country=kr&language=ko&proximity=${center.lng},${center.lat}`;
+                res = await fetch(mbUrl);
+                data = await res.json();
+
+                if (data.features && data.features.length > 0) {
+                    const best = data.features[0];
+                    const [lng, lat] = best.center;
+
+                    map.flyTo({ center: [lng, lat], zoom: 14.5, duration: 1800, essential: true });
+                    guideText.textContent = `📍 [${best.text || best.place_name}] 위치로 이동했습니다`;
+                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                } else {
+                    guideText.textContent = `⚠️ '${q}' 검색 결과를 찾을 수 없습니다`;
+                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                }
+            } catch (err) {
+                console.error('검색 오류:', err);
+                guideText.textContent = `⚠️ 검색 중 오류가 발생했습니다`;
+                setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2000);
+            }
+        }
+
+        btnMapSearch.addEventListener('click', () => searchLocation(mapSearchInput.value));
+        mapSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchLocation(mapSearchInput.value);
+        });
+
+        // 3D 고도 배율
+        const exagSlider = document.getElementById('exag-slider');
+        const exagVal = document.getElementById('exag-val');
+        exagSlider.addEventListener('input', (e) => {
+            currentExag = parseFloat(e.target.value);
+            exagVal.textContent = currentExag.toFixed(1) + 'x';
+            if (map.getSource('mapbox-dem') && map.getTerrain()) {
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            }
+        });
+
+        // 지도 스타일 전환
+        function applyMapStyle(mode) {
+            const hasCustomMap = !!map.getLayer('custom-map-layer');
+
+            if (mode === 'topo') {
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            } else if (mode === 'sat') {
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            } else if (mode === 'map2d') {
+                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                map.setTerrain(null);
+                map.easeTo({ pitch: 0, duration: 700 });
+            } else if (mode === 'map3d') {
+                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                map.easeTo({ pitch: 65, duration: 700 });
+            }
+        }
+
+        document.getElementById('style-switch-wrap').addEventListener('change', (e) => {
+            if (e.target.name === 'map-style') applyMapStyle(e.target.value);
+        });
+
+        // 경기 지도 업로드
+        let rawCustomMapUrl = null;
+        let imgNaturalW = 0, imgNaturalH = 0;
+        let baseCornerCoords = null;
+        let curOpacity = 0.85;
+        let curRotDeg = 0;
+        let curScaleRatio = 1.0;
+
+        const mapUploadInput = document.getElementById('map-upload');
+        const btnDelMap = document.getElementById('btn-del-map');
+        const btnOpenGeo = document.getElementById('btn-open-geo-modal');
+        const fineTuningBox = document.getElementById('map-fine-tuning');
+        const opacitySlider = document.getElementById('opacity-slider');
+        const rotSlider = document.getElementById('rot-slider');
+        const scaleSlider = document.getElementById('scale-slider');
+        const btn2D = document.getElementById('style-map2d');
+        const btn3D = document.getElementById('style-map3d');
+
+        mapUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                rawCustomMapUrl = event.target.result;
+                const tempImg = new Image();
+                tempImg.onload = () => {
+                    imgNaturalW = tempImg.naturalWidth;
+                    imgNaturalH = tempImg.naturalHeight;
+                    
+                    let bounds = map.getBounds();
+                    if (runners.length > 0) {
+                        bounds = new mapboxgl.LngLatBounds();
+                        runners.forEach(r => r.points.forEach(p => bounds.extend([p.lon, p.lat])));
+                    }
+                    const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
+                    baseCornerCoords = [
+                        [sw.lng, ne.lat],
+                        [ne.lng, ne.lat],
+                        [ne.lng, sw.lat],
+                        [sw.lng, sw.lat]
+                    ];
+                    updateCustomMapLayer();
+
+                    btnDelMap.style.display = 'flex';
+                    btnOpenGeo.style.display = 'block';
+                    fineTuningBox.style.display = 'flex';
+                    btn2D.disabled = false;
+                    btn3D.disabled = false;
+                    btn3D.checked = true;
+                    applyMapStyle('map3d');
+                };
+                tempImg.src = rawCustomMapUrl;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        btnDelMap.addEventListener('click', () => {
+            if (map.getLayer('custom-map-layer')) map.removeLayer('custom-map-layer');
+            if (map.getSource('custom-map-source')) map.removeSource('custom-map-source');
+
+            rawCustomMapUrl = null;
+            baseCornerCoords = null;
+            mapUploadInput.value = '';
+
+            btnDelMap.style.display = 'none';
+            btnOpenGeo.style.display = 'none';
+            fineTuningBox.style.display = 'none';
+            btn2D.disabled = true;
+            btn3D.disabled = true;
+
+            document.getElementById('style-topo').checked = true;
+            applyMapStyle('topo');
+        });
+
+        function updateCustomMapLayer() {
+            if (!rawCustomMapUrl || !baseCornerCoords) return;
+
+            const corners = applyTuningTransforms(baseCornerCoords, curRotDeg, curScaleRatio);
+
+            if (map.getSource('custom-map-source')) {
+                map.getSource('custom-map-source').setCoordinates(corners);
+            } else {
+                map.addSource('custom-map-source', {
+                    'type': 'image',
+                    'url': rawCustomMapUrl,
+                    'coordinates': corners
+                });
+                map.addLayer({
+                    'id': 'custom-map-layer',
+                    'type': 'raster',
+                    'source': 'custom-map-source',
+                    'paint': { 'raster-opacity': curOpacity }
+                });
+            }
+        }
+
+        opacitySlider.addEventListener('input', (e) => {
+            curOpacity = parseFloat(e.target.value);
+            document.getElementById('opacity-val').textContent = Math.round(curOpacity * 100) + '%';
+            if (map.getLayer('custom-map-layer')) {
+                map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
+            }
+        });
+        rotSlider.addEventListener('input', (e) => {
+            curRotDeg = parseFloat(e.target.value);
+            document.getElementById('rot-val').textContent = curRotDeg.toFixed(1) + '°';
+            updateCustomMapLayer();
+        });
+        scaleSlider.addEventListener('input', (e) => {
+            curScaleRatio = parseFloat(e.target.value);
+            document.getElementById('scale-val').textContent = Math.round(curScaleRatio * 100) + '%';
+            updateCustomMapLayer();
+        });
+
+        // ==========================================
+        // [개선] 2점 정밀 정합 완전 제어식 엔진
+        // ==========================================
+        const geoModal = document.getElementById('geo-modal');
+        const geoCanvasWrap = document.getElementById('geo-canvas-wrap');
+        const geoStage = document.getElementById('geo-stage');
+        const geoCanvasImg = document.getElementById('geo-canvas-img');
+        const geoStepTitle = document.getElementById('geo-step-title');
+
+        const btnGeoRedo1 = document.getElementById('btn-geo-redo1');
+        const btnGeoRedo2 = document.getElementById('btn-geo-redo2');
+        const btnGeoNext = document.getElementById('btn-geo-next');
+        const btnCloseGeo = document.getElementById('btn-close-geo');
+
+        const guideBanner = document.getElementById('guide-banner');
+        const guideText = document.getElementById('guide-text');
+        const btnBannerRedo = document.getElementById('btn-banner-redo');
+        const btnBannerBack = document.getElementById('btn-banner-back');
+        const btnBannerConfirm = document.getElementById('btn-banner-confirm');
+        const btnCancelGuide = document.getElementById('btn-cancel-guide');
+
+        let geoState = {
+            p1Img: null, p2Img: null,
+            p1Map: null, p2Map: null,
+            step: 1, mapStep: 3
+        };
+
+        let modalPin1El = null;
+        let modalPin2El = null;
+        let draggingDotNum = null;
+
+        let isPickingMap = false;
+        let mapPin1 = null;
+        let mapPin2 = null;
+
+        let curModalScale = 1.0;
+        let baseModalScale = 1.0;
+        let curModalX = 0, curModalY = 0;
+        let isDraggingModal = false;
+        let startClientX = 0, startClientY = 0;
+        let movedDist = 0;
+
+        function applyModalTransform(withTransition) {
+            geoStage.style.transition = withTransition ? 'transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none';
+            geoStage.style.transform = `translate(${curModalX}px, ${curModalY}px) scale(${curModalScale})`;
+        }
+
+        function resetModalToFullView(withTransition) {
+            const wrapW = geoCanvasWrap.clientWidth || 800;
+            const wrapH = geoCanvasWrap.clientHeight || 550;
+            const imgW = imgNaturalW || geoCanvasImg.naturalWidth || 800;
+            const imgH = imgNaturalH || geoCanvasImg.naturalHeight || 600;
+
+            baseModalScale = Math.min((wrapW - 20) / imgW, (wrapH - 20) / imgH, 1.0);
+            curModalScale = baseModalScale;
+            curModalX = (wrapW - imgW * baseModalScale) / 2;
+            curModalY = (wrapH - imgH * baseModalScale) / 2;
+
+            applyModalTransform(withTransition);
+        }
+
+        // 종이 지도 모달 상태별 UI 갱신 함수
+        function updateModalStepUI() {
+            if (!geoState.p1Img) {
+                // 1단계: 1번 점 대기
+                geoStepTitle.innerHTML = `<span class="step-badge badge-step1">1단계</span> <span>종이 지도를 확대하여 <b>[기준점 1 (출발 △)]</b>을 클릭하세요</span>`;
+                btnGeoRedo1.style.display = 'none';
+                btnGeoRedo2.style.display = 'none';
+                btnGeoNext.style.display = 'none';
+            } else if (geoState.p1Img && !geoState.p2Img) {
+                if (geoState.step === 1) {
+                    // 1단계 완료: 1번 핀 확인 대기
+                    geoStepTitle.innerHTML = `<span class="step-badge badge-step1">1단계 완료</span> <span>1번 핀 위치 확인 (핀을 드래그해 미세조정 가능)</span>`;
+                    btnGeoRedo1.style.display = 'inline-block';
+                    btnGeoRedo1.textContent = '↺ 1번 다시';
+                    btnGeoRedo2.style.display = 'none';
+                    btnGeoNext.style.display = 'inline-block';
+                    btnGeoNext.textContent = '➔ 2단계 진행';
+                } else {
+                    // 2단계: 2번 점 대기
+                    geoStepTitle.innerHTML = `<span class="step-badge badge-step2">2단계</span> <span>종이 지도를 확대하여 <b>[기준점 2 (외곽 TX/랜드마크)]</b>를 클릭하세요</span>`;
+                    btnGeoRedo1.style.display = 'inline-block';
+                    btnGeoRedo1.textContent = '↺ 1번 다시';
+                    btnGeoRedo2.style.display = 'none';
+                    btnGeoNext.style.display = 'none';
+                }
+            } else if (geoState.p1Img && geoState.p2Img) {
+                // 2단계 완료: 종이 지도 최종 검토
+                geoStepTitle.innerHTML = `<span class="step-badge badge-step2">종이 지도 검토</span> <span>1·2번 위치가 맞습니까? (핀을 드래그해 미세조정)</span>`;
+                btnGeoRedo1.style.display = 'inline-block';
+                btnGeoRedo1.textContent = '↺ 1번 다시';
+                btnGeoRedo2.style.display = 'inline-block';
+                btnGeoRedo2.textContent = '↺ 2번 다시';
+                btnGeoNext.style.display = 'inline-block';
+                btnGeoNext.textContent = '✅ 종이 지도 확정 (실제 지도로) ➔';
+            }
+        }
+
+        btnOpenGeo.addEventListener('click', () => {
+            if (!rawCustomMapUrl) return;
+            geoCanvasImg.src = rawCustomMapUrl;
+            
+            if (imgNaturalW > 0 && imgNaturalH > 0) {
+                geoCanvasImg.style.width = imgNaturalW + 'px';
+                geoCanvasImg.style.height = imgNaturalH + 'px';
+            }
+
+            // 초기화
+            if (modalPin1El) { modalPin1El.remove(); modalPin1El = null; }
+            if (modalPin2El) { modalPin2El.remove(); modalPin2El = null; }
+            geoState.p1Img = null;
+            geoState.p2Img = null;
+            geoState.step = 1;
+
+            updateModalStepUI();
+            geoModal.style.display = 'flex';
+
+            requestAnimationFrame(() => {
+                resetModalToFullView(false);
+            });
+        });
+
+        btnCloseGeo.addEventListener('click', () => {
+            geoModal.style.display = 'none';
+        });
+
+        // 휠 확대/축소 (부드러운 지수형)
+        geoCanvasWrap.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = geoCanvasWrap.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const zoomFactor = Math.exp(-e.deltaY * 0.0012);
+            const newScale = Math.min(Math.max(baseModalScale * 0.7, curModalScale * zoomFactor), baseModalScale * 12.0);
+
+            curModalX = mouseX - (mouseX - curModalX) * (newScale / curModalScale);
+            curModalY = mouseY - (mouseY - curModalY) * (newScale / curModalScale);
+            curModalScale = newScale;
+            applyModalTransform(false);
+        }, { passive: false });
+
+        // 마우스 드래그 및 정밀 클릭
+        geoCanvasWrap.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isDraggingModal = true;
+            startClientX = e.clientX;
+            startClientY = e.clientY;
+            movedDist = 0;
+            geoStage.style.transition = 'none';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            // 핀 드래그 중인 경우
+            if (draggingDotNum !== null) {
+                const rect = geoCanvasWrap.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                const imgX = (clickX - curModalX) / curModalScale;
+                const imgY = (clickY - curModalY) / curModalScale;
+                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
+                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
+                const clampedX = Math.max(0, Math.min(imgW, imgX));
+                const clampedY = Math.max(0, Math.min(imgH, imgY));
+
+                const targetDot = (draggingDotNum === 1 ? modalPin1El : modalPin2El);
+                if (targetDot) {
+                    targetDot.style.left = clampedX + 'px';
+                    targetDot.style.top = clampedY + 'px';
+                }
+                if (draggingDotNum === 1) geoState.p1Img = { u: clampedX, v: clampedY };
+                else geoState.p2Img = { u: clampedX, v: clampedY };
+                return;
+            }
+
+            // 지도 캔버스 패닝
+            if (!isDraggingModal) return;
+            const dx = e.clientX - startClientX;
+            const dy = e.clientY - startClientY;
+            startClientX = e.clientX;
+            startClientY = e.clientY;
+            movedDist += Math.hypot(dx, dy);
+
+            curModalX += dx;
+            curModalY += dy;
+            applyModalTransform(false);
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (draggingDotNum !== null) {
+                const targetDot = (draggingDotNum === 1 ? modalPin1El : modalPin2El);
+                if (targetDot) targetDot.style.cursor = 'grab';
+                draggingDotNum = null;
+                return;
+            }
+
+            if (!isDraggingModal) return;
+            isDraggingModal = false;
+
+            // 드래그가 아닌 5px 미만 클릭
+            if (movedDist < 5) {
+                const rect = geoCanvasWrap.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const imgX = (clickX - curModalX) / curModalScale;
+                const imgY = (clickY - curModalY) / curModalScale;
+
+                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
+                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
+
+                if (imgX >= 0 && imgX <= imgW && imgY >= 0 && imgY <= imgH) {
+                    handlePaperMapClick(imgX, imgY);
+                }
+            }
+        });
+
+        function handlePaperMapClick(u, v) {
+            if (!geoState.p1Img) {
+                geoState.p1Img = { u, v };
+                modalPin1El = createModalPin(u, v, '#e74c3c', '1');
+                updateModalStepUI();
+            } else if (!geoState.p2Img && geoState.step === 2) {
+                geoState.p2Img = { u, v };
+                modalPin2El = createModalPin(u, v, '#3498db', '2');
+                resetModalToFullView(true); // 전체 화면으로 부드럽게 복귀
+                updateModalStepUI();
+            }
+        }
+
+        function createModalPin(imgX, imgY, color, label) {
+            const dot = document.createElement('div');
+            dot.className = 'geo-dot';
+            dot.style.left = imgX + 'px';
+            dot.style.top = imgY + 'px';
+            dot.style.backgroundColor = color;
+            dot.textContent = label;
+            dot.title = `[${label}번 핀] 마우스로 끌어 미세 조정 가능`;
+
+            dot.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                draggingDotNum = label === '1' ? 1 : 2;
+                dot.style.cursor = 'grabbing';
+            });
+
+            geoStage.appendChild(dot);
+            return dot;
+        }
+
+        // 종이 지도 버튼 리스너
+        btnGeoRedo1.addEventListener('click', () => {
+            if (modalPin1El) { modalPin1El.remove(); modalPin1El = null; }
+            geoState.p1Img = null;
+            geoState.step = 1;
+            updateModalStepUI();
+        });
+
+        btnGeoRedo2.addEventListener('click', () => {
+            if (modalPin2El) { modalPin2El.remove(); modalPin2El = null; }
+            geoState.p2Img = null;
+            geoState.step = 2;
+            updateModalStepUI();
+        });
+
+        btnGeoNext.addEventListener('click', () => {
+            if (geoState.step === 1 && geoState.p1Img && !geoState.p2Img) {
+                geoState.step = 2;
+                resetModalToFullView(true);
+                updateModalStepUI();
+            } else if (geoState.p1Img && geoState.p2Img) {
+                // 종이 지도 확정 ➔ 실제 지도로 전환
+                geoModal.style.display = 'none';
+                startMapGeoreferencing();
+            }
+        });
+
+        // ==========================================
+        // 실제 지도(3단계, 4단계) 확인/다시/복귀 엔진
+        // ==========================================
+        function updateMapStepUI() {
+            guideBanner.classList.remove('banner-pulse-anim');
+            void guideBanner.offsetWidth;
+            guideBanner.classList.add('banner-pulse-anim');
+
+            if (geoState.mapStep === 3) {
+                if (!geoState.p1Map) {
+                    guideText.innerHTML = `<span class="step-badge badge-step3">3단계</span> <span>실제 지도에서 <b>[기준점 1]</b> 위치를 확대하여 클릭하세요</span>`;
+                    btnBannerRedo.style.display = 'none';
+                    btnBannerBack.style.display = 'inline-block';
+                    btnBannerBack.textContent = '◀ 종이 지도 수정';
+                    btnBannerConfirm.style.display = 'none';
+                } else {
+                    guideText.innerHTML = `<span class="step-badge badge-step3">3단계 확인</span> <span>1번 위치 확인 (마커를 끌어 미세조정 가능)</span>`;
+                    btnBannerRedo.style.display = 'inline-block';
+                    btnBannerRedo.textContent = '↺ 1번 다시';
+                    btnBannerBack.style.display = 'inline-block';
+                    btnBannerBack.textContent = '◀ 종이 지도 수정';
+                    btnBannerConfirm.style.display = 'inline-block';
+                    btnBannerConfirm.textContent = '➔ 4단계 진행';
+                }
+            } else if (geoState.mapStep === 4) {
+                if (!geoState.p2Map) {
+                    guideText.innerHTML = `<span class="step-badge badge-step4">4단계</span> <span>실제 지도에서 <b>[기준점 2]</b> 위치를 확대하여 클릭하세요</span>`;
+                    btnBannerRedo.style.display = 'none';
+                    btnBannerBack.style.display = 'inline-block';
+                    btnBannerBack.textContent = '◀ 3단계(1번) 수정';
+                    btnBannerConfirm.style.display = 'none';
+                } else {
+                    guideText.innerHTML = `<span class="step-badge badge-step4">최종 검토</span> <span>두 기준점이 모두 지정되었습니다. (마커 드래그로 미세조정)</span>`;
+                    btnBannerRedo.style.display = 'inline-block';
+                    btnBannerRedo.textContent = '↺ 2번 다시';
+                    btnBannerBack.style.display = 'inline-block';
+                    btnBannerBack.textContent = '◀ 3단계(1번) 수정';
+                    btnBannerConfirm.style.display = 'inline-block';
+                    btnBannerConfirm.textContent = '🎯 정합 실행 및 완료';
+                }
+            }
+        }
+
+        function startMapGeoreferencing() {
+            isPickingMap = true;
+            geoState.mapStep = 3;
+
+            if (map.getSource('mapbox-dem')) map.setTerrain(null);
+            map.easeTo({ pitch: 0, duration: 500 });
+            if (map.getLayer('custom-map-layer')) {
+                map.setPaintProperty('custom-map-layer', 'raster-opacity', 0);
+            }
+
+            map.getCanvas().style.cursor = 'crosshair';
+            guideBanner.style.display = 'flex';
+            updateMapStepUI();
+        }
+
+        function cancelGuide() {
+            isPickingMap = false;
+            activeTxKey = null;
+            guideBanner.style.display = 'none';
+            map.getCanvas().style.cursor = '';
+            document.querySelectorAll('.btn-tx-pick').forEach(b => b.classList.remove('active'));
+
+            if (mapPin1) { mapPin1.remove(); mapPin1 = null; }
+            if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
+            geoState.p1Map = null;
+            geoState.p2Map = null;
+
+            if (map.getSource('mapbox-dem') && currentExag > 0) {
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            }
+            if (map.getLayer('custom-map-layer')) {
+                map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
+            }
+        }
+        btnCancelGuide.addEventListener('click', cancelGuide);
+
+        // 실제 지도 배너 버튼 액션
+        btnBannerRedo.addEventListener('click', () => {
+            if (geoState.mapStep === 3) {
+                if (mapPin1) { mapPin1.remove(); mapPin1 = null; }
+                geoState.p1Map = null;
+                updateMapStepUI();
+            } else if (geoState.mapStep === 4) {
+                if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
+                geoState.p2Map = null;
+                updateMapStepUI();
+            }
+        });
+
+        btnBannerBack.addEventListener('click', () => {
+            if (geoState.mapStep === 3) {
+                // 종이 지도로 다시 돌아가기
+                geoModal.style.display = 'flex';
+                updateModalStepUI();
+            } else if (geoState.mapStep === 4) {
+                // 3단계(1번)로 돌아가기
+                if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
+                geoState.p2Map = null;
+                geoState.mapStep = 3;
+                if (geoState.p1Map) {
+                    map.easeTo({ center: geoState.p1Map, zoom: 14.5, duration: 800 });
+                }
+                updateMapStepUI();
+            }
+        });
+
+        btnBannerConfirm.addEventListener('click', () => {
+            if (geoState.mapStep === 3 && geoState.p1Map) {
+                // 1번 확정 ➔ 4단계로 전환
+                map.easeTo({ center: geoState.p1Map, zoom: 13.8, duration: 800 });
+                geoState.mapStep = 4;
+                updateMapStepUI();
+            } else if (geoState.mapStep === 4 && geoState.p1Map && geoState.p2Map) {
+                // 4단계 확정 ➔ 정밀 정합 연산 수행
+                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
+                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
+
+                baseCornerCoords = compute2PointAffine(
+                    geoState.p1Img, geoState.p2Img,
+                    geoState.p1Map, geoState.p2Map,
+                    imgW, imgH
+                );
+
+                curRotDeg = 0; rotSlider.value = 0; document.getElementById('rot-val').textContent = '0°';
+                curScaleRatio = 1.0; scaleSlider.value = 1.0; document.getElementById('scale-val').textContent = '100%';
+                updateCustomMapLayer();
+
+                if (map.getLayer('custom-map-layer')) {
+                    map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
+                }
+                if (map.getSource('mapbox-dem')) {
+                    map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                }
+
+                const fitBounds = new mapboxgl.LngLatBounds();
+                baseCornerCoords.forEach(c => fitBounds.extend(c));
+                map.fitBounds(fitBounds, { padding: 80, pitch: 45, duration: 1400 });
+
+                guideText.innerHTML = '✅ <b>종이 지도 2점 정밀 정합이 완벽하게 완료되었습니다!</b>';
+                btnBannerRedo.style.display = 'none';
+                btnBannerBack.style.display = 'none';
+                btnBannerConfirm.style.display = 'none';
+
+                setTimeout(() => {
+                    cancelGuide();
+                }, 2500);
+            }
+        });
+
+        // 실제 지도 클릭 핸들러
+        map.on('click', (e) => {
+            if (isPickingMap) {
+                if (geoState.mapStep === 3 && !geoState.p1Map) {
+                    geoState.p1Map = [e.lngLat.lng, e.lngLat.lat];
+
+                    const el1 = document.createElement('div');
+                    el1.className = 'map-geo-pin';
+                    el1.style.backgroundColor = '#e74c3c';
+                    el1.textContent = '1';
+                    el1.title = '1번 핀 (마우스로 끌어서 미세 조정 가능)';
+
+                    mapPin1 = new mapboxgl.Marker({ element: el1, draggable: true })
+                        .setLngLat(geoState.p1Map)
+                        .addTo(map);
+
+                    mapPin1.on('dragend', () => {
+                        const ll = mapPin1.getLngLat();
+                        geoState.p1Map = [ll.lng, ll.lat];
+                    });
+
+                    updateMapStepUI();
+                } else if (geoState.mapStep === 4 && !geoState.p2Map) {
+                    geoState.p2Map = [e.lngLat.lng, e.lngLat.lat];
+
+                    const el2 = document.createElement('div');
+                    el2.className = 'map-geo-pin';
+                    el2.style.backgroundColor = '#3498db';
+                    el2.textContent = '2';
+                    el2.title = '2번 핀 (마우스로 끌어서 미세 조정 가능)';
+
+                    mapPin2 = new mapboxgl.Marker({ element: el2, draggable: true })
+                        .setLngLat(geoState.p2Map)
+                        .addTo(map);
+
+                    mapPin2.on('dragend', () => {
+                        const ll = mapPin2.getLngLat();
+                        geoState.p2Map = [ll.lng, ll.lat];
+                    });
+
+                    updateMapStepUI();
+                }
+                return;
+            }
+
+            // 송신기 배치
+            if (activeTxKey) {
+                setTxPosition(activeTxKey, e.lngLat.lng, e.lngLat.lat);
+                cancelGuide();
+            }
+        });
+
+        // 2점 정합 아핀 변환 수학식
+        const R_EARTH = 6378137;
+        function lngLatToMercator(lng, lat) {
+            const x = R_EARTH * (lng * Math.PI / 180);
+            const y = R_EARTH * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
+            return { x, y };
+        }
+        function mercatorToLngLat(x, y) {
+            const lng = (x / R_EARTH) * (180 / Math.PI);
+            const lat = (2 * Math.atan(Math.exp(y / R_EARTH)) - Math.PI / 2) * (180 / Math.PI);
+            return [lng, lat];
+        }
+
+        function compute2PointAffine(p1I, p2I, p1M, p2M, W, H) {
+            const m1 = lngLatToMercator(p1M[0], p1M[1]);
+            const m2 = lngLatToMercator(p2M[0], p2M[1]);
+
+            const dxM = m2.x - m1.x;
+            const dyM = m2.y - m1.y;
+            const distM = Math.hypot(dxM, dyM);
+            const angleM = Math.atan2(dyM, dxM);
+
+            const duP = p2I.u - p1I.u;
+            const dvP = p1I.v - p2I.v;
+            const distP = Math.hypot(duP, dvP);
+            const angleP = Math.atan2(dvP, duP);
+
+            const scale = distM / distP;
+            const rot = angleM - angleP;
+
+            const imgCorners = [{u:0, v:0}, {u:W, v:0}, {u:W, v:H}, {u:0, v:H}];
+            return imgCorners.map(c => {
+                const du = c.u - p1I.u;
+                const dv = p1I.v - c.v;
+                const rx = du * Math.cos(rot) - dv * Math.sin(rot);
+                const ry = du * Math.sin(rot) + dv * Math.cos(rot);
+                const curX = m1.x + rx * scale;
+                const curY = m1.y + ry * scale;
+                return mercatorToLngLat(curX, curY);
+            });
+        }
+
+        function applyTuningTransforms(corners, dDeg, dScale) {
+            if (dDeg === 0 && dScale === 1.0) return corners;
+            const mercs = corners.map(c => lngLatToMercator(c[0], c[1]));
+            const cx = (mercs[0].x + mercs[2].x) / 2;
+            const cy = (mercs[0].y + mercs[2].y) / 2;
+            const rad = dDeg * Math.PI / 180;
+
+            return mercs.map(m => {
+                let dx = (m.x - cx) * dScale;
+                let dy = (m.y - cy) * dScale;
+                const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
+                const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+                return mercatorToLngLat(cx + rx, cy + ry);
+            });
+        }
+
+        // 종목별 송신기 구성
+        const TX_CONFIGS = {
+            classic: [
+                { key: 'S', label: '△ 스타트' },
+                { key: '1', label: 'TX 1' }, { key: '2', label: 'TX 2' },
+                { key: '3', label: 'TX 3' }, { key: '4', label: 'TX 4' },
+                { key: '5', label: 'TX 5' },
+                { key: 'B', label: '비컨(B)' },
+                { key: 'F', label: '◎ 피니시' }
+            ],
+            foxoring: [
+                { key: 'S', label: '△ 스타트' },
+                { key: '1', label: 'TX 1' }, { key: '2', label: 'TX 2' },
+                { key: '3', label: 'TX 3' }, { key: '4', label: 'TX 4' },
+                { key: '5', label: 'TX 5' }, { key: '6', label: 'TX 6' },
+                { key: '7', label: 'TX 7' }, { key: '8', label: 'TX 8' },
+                { key: '9', label: 'TX 9' }, { key: '10', label: 'TX 10' },
+                { key: 'B', label: '비컨(B)' },
+                { key: 'F', label: '◎ 피니시' }
+            ],
+            sprint: [
+                { key: 'S', label: '△ 스타트' },
+                { key: '1', label: 'TX 1' }, { key: '2', label: 'TX 2' },
+                { key: '3', label: 'TX 3' }, { key: '4', label: 'TX 4' },
+                { key: '5', label: 'TX 5' },
+                { key: 'Sp', label: '관람점(S)' },
+                { key: '1F', label: 'TX 1F' }, { key: '2F', label: 'TX 2F' },
+                { key: '3F', label: 'TX 3F' }, { key: '4F', label: 'TX 4F' },
+                { key: '5F', label: 'TX 5F' },
+                { key: 'B', label: '비컨(B)' },
+                { key: 'F', label: '◎ 피니시' }
+            ]
+        };
+
+        const txGrid = document.getElementById('tx-dynamic-grid');
+        const raceTypeSelect = document.getElementById('race-type');
+        let activeTxKey = null;
+        let txMarkers = {};
+        const txListBox = document.getElementById('tx-list-box');
+
+        function renderTxGrid(type) {
+            txGrid.innerHTML = '';
+            const list = TX_CONFIGS[type] || TX_CONFIGS.classic;
+            list.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-tx-pick';
+                btn.setAttribute('data-tx', item.key);
+                btn.textContent = item.label;
+                btn.addEventListener('click', () => {
+                    if (activeTxKey === item.key) {
+                        cancelGuide();
+                        return;
+                    }
+                    activeTxKey = item.key;
+                    document.querySelectorAll('.btn-tx-pick').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    guideText.textContent = `[${item.label}] 위치를 지도에서 클릭하세요 (2D 정밀 모드)`;
+                    btnBannerRedo.style.display = 'none';
+                    btnBannerBack.style.display = 'none';
+                    btnBannerConfirm.style.display = 'none';
+                    guideBanner.style.display = 'flex';
+                    map.getCanvas().style.cursor = 'crosshair';
+                    if (map.getPitch() !== 0) map.easeTo({ pitch: 0, duration: 400 });
+                });
+                txGrid.appendChild(btn);
+            });
+        }
+
+        renderTxGrid('classic');
+        raceTypeSelect.addEventListener('change', (e) => {
+            renderTxGrid(e.target.value);
+            if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
+        });
+
+        document.getElementById('btn-tx-manual').addEventListener('click', () => {
+            const inputVal = document.getElementById('tx-manual-input').value.trim();
+            if (!inputVal) return;
+            const parts = inputVal.split(',').map(s => parseFloat(s.trim()));
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                const targetKey = activeTxKey || '1';
+                setTxPosition(targetKey, parts[1], parts[0]);
+                document.getElementById('tx-manual-input').value = '';
+                cancelGuide();
+            } else {
+                alert('위도, 경도 형식(예: 35.8512, 127.1234)으로 입력해 주세요.');
+            }
+        });
+
+        function setTxPosition(key, lng, lat) {
+            if (txMarkers[key]) txMarkers[key].marker.remove();
+
+            const el = document.createElement('div');
+            if (key === 'S') {
+                el.className = 'iof-start-marker';
+                el.title = '출발점 (Start)';
+            } else {
+                el.className = 'iof-tx-marker';
+                el.textContent = key;
+                el.title = `송신기 TX ${key}`;
+            }
+
+            const marker = new mapboxgl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .addTo(map);
+
+            txMarkers[key] = { key, lng, lat, marker };
+            renderTxList();
+
+            if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
+        }
+
+        function removeTx(key) {
+            if (txMarkers[key]) {
+                txMarkers[key].marker.remove();
+                delete txMarkers[key];
+                renderTxList();
+                if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
+            }
+        }
+
+        function renderTxList() {
+            txListBox.innerHTML = '';
+            Object.values(txMarkers).forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'tx-list-item';
+                row.innerHTML = `
+                    <span><b>TX ${item.key}</b> : ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</span>
+                    <button class="btn-del-item" style="width:18px;height:18px;font-size:10px;" onclick="removeTx('${item.key}')">✕</button>
+                `;
+                txListBox.appendChild(row);
+            });
+        }
+        window.removeTx = removeTx;
+
+        // 4. 선수 GPX 추가 및 시뮬레이션
+        let runners = [];
+        let runnerIdSequence = 0;
+        let globalStartTime = 0;
+        let globalEndTime = 0;
+        let currentSimTime = 0;
+        let isPlaying = false;
+        let animId = null;
+
+        const gpxInput = document.getElementById('gpx-upload');
+        const runnerListBox = document.getElementById('runner-list-box');
+        const topScoreboardBar = document.getElementById('top-scoreboard-bar');
+        const playerBar = document.getElementById('player-bar');
+        const btnPlay = document.getElementById('btn-play');
+        const timeline = document.getElementById('timeline');
+        const speedSelect = document.getElementById('speed-select');
+
+        gpxInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            const bounds = new mapboxgl.LngLatBounds();
+            const isFirst = runners.length === 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const text = await file.text();
+                const runnerName = file.name.replace(/\.[^/.]+$/, '');
+                const runner = parseGPX(text, runnerName, runnerIdSequence++);
+                if (runner && runner.points.length > 0) {
+                    runners.push(runner);
+                    runner.points.forEach(p => bounds.extend([p.lon, p.lat]));
+                }
+            }
+
+            gpxInput.value = '';
+            if (runners.length === 0) return;
+
+            recalcTimeline();
+            renderRunnerList();
+            renderScoreCards();
+
+            playerBar.style.display = 'flex';
+
+            if (isFirst) {
+                currentSimTime = globalStartTime;
+                map.fitBounds(bounds, { padding: 90, pitch: 65, duration: 1500 });
+            }
+            updateSimulation(currentSimTime);
+        });
+
+        function parseGPX(gpxText, defaultName, id) {
+            const xml = new DOMParser().parseFromString(gpxText, 'application/xml');
+            const trkpts = xml.querySelectorAll('trkpt');
+            if (trkpts.length === 0) return null;
+
+            const color = PALETTE[id % PALETTE.length];
+            const points = [];
+            let totalDist = 0, totalEle = 0;
+            let prevLat = null, prevLon = null, prevEle = null;
+
+            trkpts.forEach((pt, idx) => {
+                const lat = parseFloat(pt.getAttribute('lat'));
+                const lon = parseFloat(pt.getAttribute('lon'));
+                const eleNode = pt.querySelector('ele');
+                const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+                const timeNode = pt.querySelector('time');
+                const time = timeNode ? new Date(timeNode.textContent).getTime() : (Date.now() + idx * 1000);
+
+                if (prevLat !== null && prevLon !== null) {
+                    totalDist += calculateDistance(prevLat, prevLon, lat, lon);
+                    if (prevEle !== null && ele > prevEle) totalEle += (ele - prevEle);
+                }
+
+                points.push({ lat, lon, ele, time });
+                prevLat = lat; prevLon = lon; prevEle = ele;
+            });
+
+            return createRunnerObject(id, defaultName, color, points, totalDist, totalEle);
+        }
+
+        function createRunnerObject(id, name, color, points, totalDist, totalEle) {
+            const el = document.createElement('div');
+            el.className = 'runner-marker-container';
+            el.innerHTML = `
+                <div class="runner-pulse" style="border-color: ${color}; background: ${color}22;"></div>
+                <div class="runner-badge">${name}</div>
+                <div class="runner-arrow-wrap">
+                    <div class="runner-arrow-inner">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; display: block;">
+                            <polygon points="12,1 23,23 12,17 1,23" fill="${color}" stroke="none"/>
+                        </svg>
+                    </div>
+                </div>
+            `;
+
+            const marker = new mapboxgl.Marker({ element: el })
+                .setLngLat([points[0].lon, points[0].lat])
+                .addTo(map);
+
+            return {
+                id: id,
+                name: name,
+                color: color,
+                points: points,
+                distance: totalDist,
+                elevationGain: totalEle,
+                startTime: points[0].time,
+                endTime: points[points.length - 1].time,
+                marker: marker,
+                element: el,
+                arrowInner: el.querySelector('.runner-arrow-inner'),
+                currentPos: null
+            };
+        }
+
+        window.deleteRunner = function(id) {
+            const idx = runners.findIndex(r => r.id === id);
+            if (idx === -1) return;
+
+            runners[idx].marker.remove();
+            runners.splice(idx, 1);
+
+            if (runners.length === 0) {
+                playerBar.style.display = 'none';
+                pauseTrack();
+            } else {
+                recalcTimeline();
+                updateSimulation(currentSimTime);
+            }
+
+            renderRunnerList();
+            renderScoreCards();
+        };
+
+        function recalcTimeline() {
+            if (runners.length === 0) return;
+            globalStartTime = Math.min(...runners.map(r => r.startTime));
+            globalEndTime = Math.max(...runners.map(r => r.endTime));
+            if (currentSimTime < globalStartTime || currentSimTime > globalEndTime) {
+                currentSimTime = globalStartTime;
+            }
+        }
+
+        function renderRunnerList() {
+            runnerListBox.innerHTML = '';
+            runners.forEach((r) => {
+                const item = document.createElement('div');
+                item.className = 'runner-item';
+                item.style.borderLeftColor = r.color;
+                item.innerHTML = `
+                    <div class="runner-info-wrap">
+                        <span class="runner-name-tag" style="color:${r.color};">${r.name}</span>
+                        <span class="runner-stats-tag">${r.distance.toFixed(1)}km / ▲${Math.round(r.elevationGain)}m</span>
+                    </div>
+                    <button class="btn-del-item" onclick="deleteRunner(${r.id})" title="선수 삭제">✕</button>
+                `;
+                runnerListBox.appendChild(item);
+            });
+        }
+
+        function renderScoreCards() {
+            topScoreboardBar.innerHTML = '';
+            runners.forEach((r) => {
+                const card = document.createElement('div');
+                card.className = 'runner-score-card';
+                card.innerHTML = `
+                    <div class="card-color-dot" style="background:${r.color}; box-shadow: 0 0 6px ${r.color};"></div>
+                    <div class="card-callsign">${r.name}</div>
+                    <div class="card-stats">${r.distance.toFixed(1)}k · ▲${Math.round(r.elevationGain)}m</div>
+                `;
+                card.addEventListener('mouseenter', () => r.element.classList.add('active-hover'));
+                card.addEventListener('mouseleave', () => r.element.classList.remove('active-hover'));
+                card.addEventListener('click', () => {
+                    if (r.currentPos) {
+                        map.easeTo({ center: [r.currentPos.lon, r.currentPos.lat], zoom: 15, duration: 900 });
+                    }
+                });
+                topScoreboardBar.appendChild(card);
+            });
+        }
+
+        function updateSimulation(simTime) {
+            runners.forEach(r => {
+                if (simTime < r.startTime) {
+                    r.element.style.opacity = '0';
+                    r.element.style.pointerEvents = 'none';
+                    return;
+                }
+                r.element.style.opacity = '1';
+                r.element.style.pointerEvents = 'auto';
+
+                const pos = getInterpolatedPoint(r.points, simTime);
+                r.currentPos = pos;
+                r.marker.setLngLat([pos.lon, pos.lat]);
+                r.arrowInner.style.transform = `rotate(${pos.bearing}deg)`;
+            });
+
+            const pct = ((simTime - globalStartTime) / Math.max(1, globalEndTime - globalStartTime)) * 1000;
+            timeline.value = Math.min(1000, Math.max(0, pct));
+        }
+
+        function getInterpolatedPoint(pts, time) {
+            if (time <= pts[0].time) return { lon: pts[0].lon, lat: pts[0].lat, bearing: 0 };
+            if (time >= pts[pts.length - 1].time) {
+                const last = pts[pts.length - 2] || pts[pts.length - 1];
+                const endP = pts[pts.length - 1];
+                return { lon: endP.lon, lat: endP.lat, bearing: getBearing(last.lat, last.lon, endP.lat, endP.lon) };
+            }
+
+            let low = 0, high = pts.length - 1;
+            while (low <= high) {
+                const mid = (low + high) >> 1;
+                if (pts[mid].time < time) low = mid + 1;
+                else high = mid - 1;
+            }
+            const i1 = Math.max(0, low - 1);
+            const i2 = Math.min(pts.length - 1, low);
+
+            const p1 = pts[i1], p2 = pts[i2];
+            const span = p2.time - p1.time;
+            const ratio = span > 0 ? (time - p1.time) / span : 0;
+
+            return {
+                lon: p1.lon + (p2.lon - p1.lon) * ratio,
+                lat: p1.lat + (p2.lat - p1.lat) * ratio,
+                bearing: getBearing(p1.lat, p1.lon, p2.lat, p2.lon)
+            };
+        }
+
+        function playLoop(lastTimestamp) {
+            function loop(now) {
+                if (!isPlaying) return;
+                const dt = (now - lastTimestamp) / 1000;
+                lastTimestamp = now;
+
+                const speed = parseFloat(speedSelect.value);
+                currentSimTime += dt * 1000 * speed;
+
+                if (currentSimTime >= globalEndTime) {
+                    currentSimTime = globalEndTime;
+                    updateSimulation(currentSimTime);
+                    pauseTrack();
+                    return;
+                }
+
+                updateSimulation(currentSimTime);
+                animId = requestAnimationFrame(loop);
+            }
+            animId = requestAnimationFrame(loop);
+        }
+
+        function playTrack() {
+            isPlaying = true;
+            btnPlay.textContent = '⏸';
+            playLoop(performance.now());
+        }
+
+        function pauseTrack() {
+            isPlaying = false;
+            btnPlay.textContent = '▶';
+            if (animId) cancelAnimationFrame(animId);
+        }
+
+        btnPlay.addEventListener('click', () => {
+            if (runners.length === 0) return;
+            if (isPlaying) pauseTrack();
+            else {
+                if (currentSimTime >= globalEndTime) currentSimTime = globalStartTime;
+                playTrack();
+            }
+        });
+
+        timeline.addEventListener('input', (e) => {
+            if (runners.length === 0) return;
+            const pct = parseFloat(e.target.value) / 1000;
+            currentSimTime = globalStartTime + pct * (globalEndTime - globalStartTime);
+            updateSimulation(currentSimTime);
+        });
+
+        // AI 가상 코스 엔진
+        const modeGpx = document.getElementById('mode-gpx');
+        const modeGhost = document.getElementById('mode-ghost');
+
+        modeGhost.addEventListener('click', () => {
+            const ok = generateVirtualCourse();
+            if (!ok) modeGpx.checked = true;
+        });
+
+        modeGpx.addEventListener('click', () => {
+            removeGhostRunner();
+            if (map.getSource('virtual-course-source')) {
+                map.getSource('virtual-course-source').setData({ 'type': 'FeatureCollection', 'features': [] });
+            }
+            cancelGuide();
+
+            if (runners.length > 0) {
+                const b = new mapboxgl.LngLatBounds();
+                runners.forEach(r => r.points.forEach(p => b.extend([p.lon, p.lat])));
+                map.fitBounds(b, { padding: 90, pitch: 65, duration: 1500 });
+            }
+        });
+
+        function removeGhostRunner() {
+            const gIdx = runners.findIndex(r => r.id === 9999);
+            if (gIdx !== -1) {
+                runners[gIdx].marker.remove();
+                runners.splice(gIdx, 1);
+                recalcTimeline();
+                renderRunnerList();
+                renderScoreCards();
+                if (runners.length === 0) playerBar.style.display = 'none';
+            }
+        }
+
+        function findOptimalRoute(startPt, targets, endPt) {
+            if (targets.length === 0) return [];
+            if (targets.length <= 7) {
+                let bestOrder = null;
+                let minCost = Infinity;
+
+                function permute(arr, memo = []) {
+                    if (arr.length === 0) {
+                        let cost = calculateDistance(startPt.lat, startPt.lng, memo[0].lat, memo[0].lng);
+                        for (let i = 0; i < memo.length - 1; i++) {
+                            cost += calculateDistance(memo[i].lat, memo[i].lng, memo[i+1].lat, memo[i+1].lng);
+                        }
+                        if (endPt) {
+                            cost += calculateDistance(memo[memo.length - 1].lat, memo[memo.length - 1].lng, endPt.lat, endPt.lng);
+                        }
+                        if (cost < minCost) {
+                            minCost = cost;
+                            bestOrder = memo;
+                        }
+                        return;
+                    }
+                    for (let i = 0; i < arr.length; i++) {
+                        const curr = arr.slice();
+                        const next = curr.splice(i, 1);
+                        permute(curr, memo.concat(next));
+                    }
+                }
+
+                permute(targets);
+                return bestOrder;
+            } else {
+                let order = sortNearest(startPt, targets);
+                let improved = true;
+                let iter = 0;
+                while (improved && iter < 50) {
+                    improved = false;
+                    iter++;
+                    for (let i = 0; i < order.length - 1; i++) {
+                        for (let k = i + 1; k < order.length; k++) {
+                            const prevPt = (i === 0) ? startPt : order[i - 1];
+                            const nextPt = (k === order.length - 1) ? (endPt || order[k]) : order[k + 1];
+                            
+                            const curDist = calculateDistance(prevPt.lat, prevPt.lng, order[i].lat, order[i].lng) +
+                                            calculateDistance(order[k].lat, order[k].lng, nextPt.lat, nextPt.lng);
+                            const newDist = calculateDistance(prevPt.lat, prevPt.lng, order[k].lat, order[k].lng) +
+                                            calculateDistance(order[i].lat, order[i].lng, nextPt.lat, nextPt.lng);
+                            
+                            if (newDist < curDist - 0.001) {
+                                const reversed = order.slice(i, k + 1).reverse();
+                                order.splice(i, k - i + 1, ...reversed);
+                                improved = true;
+                            }
+                        }
+                    }
+                }
+                return order;
+            }
+        }
+
+        async function generateVirtualCourse() {
+            const hasStart = !!txMarkers['S'];
+            const hasFinish = !!txMarkers['F'];
+            const targetKeys = Object.keys(txMarkers).filter(k => k !== 'S' && k !== 'F' && k !== 'B');
+
+            if (!hasStart || !hasFinish || targetKeys.length === 0) {
+                guideText.textContent = '⚠️ 출발(S), 송신기, 피니시(F)를 먼저 지정해 주세요!';
+                btnBannerRedo.style.display = 'none';
+                btnBannerBack.style.display = 'none';
+                btnBannerConfirm.style.display = 'none';
+                guideBanner.style.display = 'flex';
+                setTimeout(() => { if (!activeTxKey) guideBanner.style.display = 'none'; }, 2500);
+                return false;
+            }
+
+            const raceType = raceTypeSelect.value;
+            let orderedWaypoints = [];
+            orderedWaypoints.push(txMarkers['S']);
+            const endTarget = txMarkers['B'] || txMarkers['F'];
+
+            if (raceType === 'sprint') {
+                const loop1 = targetKeys.filter(k => !k.includes('F') && k !== 'Sp');
+                const loop2 = targetKeys.filter(k => k.includes('F'));
+                const midPt = txMarkers['Sp'] || endTarget;
+                orderedWaypoints.push(...findOptimalRoute(txMarkers['S'], loop1.map(k => txMarkers[k]), midPt));
+                if (txMarkers['Sp']) orderedWaypoints.push(txMarkers['Sp']);
+                const lastPt = orderedWaypoints[orderedWaypoints.length - 1];
+                orderedWaypoints.push(...findOptimalRoute(lastPt, loop2.map(k => txMarkers[k]), endTarget));
+            } else {
+                const targets = targetKeys.map(k => txMarkers[k]);
+                orderedWaypoints.push(...findOptimalRoute(txMarkers['S'], targets, endTarget));
+            }
+
+            if (txMarkers['B']) orderedWaypoints.push(txMarkers['B']);
+            orderedWaypoints.push(txMarkers['F']);
+
+            const bounds = new mapboxgl.LngLatBounds();
+            orderedWaypoints.forEach(w => bounds.extend([w.lng, w.lat]));
+            map.fitBounds(bounds, { padding: 90, pitch: 65, duration: 1500 });
+
+            guideText.textContent = '⏳ 건지산 실제 오솔길 경로를 탐색하고 있습니다...';
+            btnBannerRedo.style.display = 'none';
+            btnBannerBack.style.display = 'none';
+            btnBannerConfirm.style.display = 'none';
+            guideBanner.style.display = 'flex';
+
+            let routeCoords = [];
+            try {
+                const coordStr = orderedWaypoints.map(w => `${w.lng},${w.lat}`).join(';');
+                const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${coordStr}?geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.routes && data.routes.length > 0) {
+                    routeCoords = data.routes[0].geometry.coordinates;
+                }
+            } catch (err) {
+                console.warn('Mapbox Directions fallback:', err);
+            }
+
+            if (routeCoords.length === 0) {
+                for (let i = 0; i < orderedWaypoints.length - 1; i++) {
+                    const pA = orderedWaypoints[i], pB = orderedWaypoints[i+1];
+                    const steps = 15;
+                    for (let s = 0; s <= steps; s++) {
+                        const r = s / steps;
+                        routeCoords.push([pA.lng + (pB.lng - pA.lng) * r, pA.lat + (pB.lat - pA.lat) * r]);
+                    }
+                }
+            }
+
+            const ghostPoints = [];
+            let totalDist = 0, totalEle = 0;
+            let simTimeCursor = Date.now();
+            const PACE_SEC_PER_KM = 360;
+
+            for (let i = 0; i < routeCoords.length; i++) {
+                const cLng = routeCoords[i][0];
+                const cLat = routeCoords[i][1];
+
+                let ele = 80;
+                if (map.queryTerrainElevation) {
+                    const terr = map.queryTerrainElevation([cLng, cLat]);
+                    if (terr !== null) ele = terr;
+                }
+
+                if (ghostPoints.length > 0) {
+                    const lastP = ghostPoints[ghostPoints.length - 1];
+                    const d = calculateDistance(lastP.lat, lastP.lon, cLat, cLng);
+                    totalDist += d;
+                    if (ele > lastP.ele) totalEle += (ele - lastP.ele);
+                    simTimeCursor += d * PACE_SEC_PER_KM * 1000;
+                }
+
+                ghostPoints.push({ lat: cLat, lon: cLng, ele: ele, time: simTimeCursor });
+            }
+
+            if (map.getSource('virtual-course-source')) {
+                map.getSource('virtual-course-source').setData({
+                    'type': 'FeatureCollection',
+                    'features': [{
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': { 'type': 'LineString', 'coordinates': routeCoords }
+                    }]
+                });
+            }
+
+            removeGhostRunner();
+            const ghostRunner = createRunnerObject(9999, 'AI Ghost', '#00cec9', ghostPoints, totalDist, totalEle);
+            runners.push(ghostRunner);
+
+            recalcTimeline();
+            renderRunnerList();
+            renderScoreCards();
+            playerBar.style.display = 'flex';
+
+            const seqStr = orderedWaypoints.map(w => w.key).join(' ➔ ');
+            const totalMins = Math.round((ghostPoints[ghostPoints.length - 1].time - ghostPoints[0].time) / 60000);
+            guideText.textContent = `🎯 AI 가상 코스: ${seqStr} | 총 ${totalDist.toFixed(1)}km / ▲${Math.round(totalEle)}m (예상: ${totalMins}분)`;
+            btnBannerRedo.style.display = 'none';
+            btnBannerBack.style.display = 'none';
+            btnBannerConfirm.style.display = 'none';
+            guideBanner.style.display = 'flex';
+
+            currentSimTime = globalStartTime;
+            updateSimulation(currentSimTime);
+            return true;
+        }
+
+        function sortNearest(startPt, targets) {
+            const unvisited = [...targets];
+            const result = [];
+            let current = startPt;
+
+            while (unvisited.length > 0) {
+                let nearestIdx = 0;
+                let minDist = Infinity;
+                for (let i = 0; i < unvisited.length; i++) {
+                    const d = calculateDistance(current.lat, current.lng, unvisited[i].lat, unvisited[i].lng);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearestIdx = i;
+                    }
+                }
+                current = unvisited.splice(nearestIdx, 1)[0];
+                result.push(current);
+            }
+            return result;
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 정확도 : 높음
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function getBearing(startLat, startLng, destLat, destLng) {
+            const y = Math.sin((destLng - startLng) * Math.PI / 180) * Math.cos(destLat * Math.PI / 180);
+            const x = Math.cos(startLat * Math.PI / 180) * Math.sin(destLat * Math.PI / 180) -
+                      Math.sin(startLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.cos((destLng - startLng) * Math.PI / 180);
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+    </script>
+</body>
+</html>
