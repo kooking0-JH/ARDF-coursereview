@@ -2,14 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <!-- 모바일 정배율 뷰포트 설정 (가장자리 확대 왜곡 방지) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 모바일 정배율 뷰포트 설정 및 가상 키보드 지도 압축 방지 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
     <title>ARDF 3D 코스 리뷰</title>
     <!-- Mapbox 3D 라이브러리 -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
     <style>
-        body { margin: 0; font-family: '맑은 고딕', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #1a252f; }
+        body { 
+            margin: 0; 
+            font-family: '맑은 고딕', sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            height: 100dvh; /* 모바일 브라우저 주소창/하단 툴바 변동 동적 반영 */
+            overflow: hidden; 
+            background: #1a252f; 
+        }
         
         /* 좌측 사이드바 */
         #sidebar { 
@@ -153,7 +161,9 @@
             position: absolute; top: 52px; right: 16px;
             display: flex; flex-direction: column;
             align-items: flex-end; gap: 5px; z-index: 14;
-            max-height: calc(100vh - 120px); overflow-y: auto;
+            max-height: calc(100vh - 120px); 
+            max-height: calc(100dvh - 120px); 
+            overflow-y: auto;
         }
         .runner-score-card {
             position: relative;
@@ -228,8 +238,16 @@
         }
         .btn-del-item:hover { background: #e74c3c; }
 
-        /* 선수 목록 */
-        #runner-list-box { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        /* 선수 목록: 스크롤 격리 */
+        #runner-list-box { 
+            max-height: 120px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            margin-top: 8px; 
+            overscroll-behavior: contain;
+        }
         .runner-item { 
             display: flex; align-items: center; justify-content: space-between; 
             background: #243342; padding: 6px 8px 6px 10px; border-radius: 4px; 
@@ -249,7 +267,16 @@
         .btn-tx-pick:hover { background: #34495e; color: #f1c40f; }
         .btn-tx-pick.active { background: #8e44ad; color: #fff; border-color: #9b59b6; box-shadow: 0 0 8px rgba(155,89,182,0.8); }
 
-        #tx-list-box { max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+        /* 송신기 목록: 스크롤 격리 */
+        #tx-list-box { 
+            max-height: 110px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; 
+            margin-top: 8px; 
+            overscroll-behavior: contain;
+        }
         .tx-list-item {
             display: flex; align-items: center; justify-content: space-between;
             background: #243342; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;
@@ -423,13 +450,14 @@
 
         /* 2점 정합 모달 뷰포트 */
         #geo-modal {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100vw; 
+            height: 100vh; height: 100dvh;
             background: rgba(0,0,0,0.85); z-index: 200; display: none;
             flex-direction: column; align-items: center; justify-content: center;
         }
         #geo-modal-box {
             background: #2c3e50; border-radius: 10px; padding: 18px; width: 88vw; max-width: 960px;
-            height: 84vh; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+            height: 84vh; height: 84dvh; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
         }
         #geo-modal-header { display: flex; justify-content: space-between; align-items: center; color: #fff; flex-wrap: wrap; gap: 8px; }
         #geo-step-title {
@@ -485,15 +513,18 @@
         }
 
         /* ========================================================
-           모바일 최적화 미디어 쿼리 (화면 폭 768px 이하 스마트폰 대응)
+           모바일 및 태블릿 최적화 미디어 쿼리 (화면 폭 1024px 이하 대응)
            ======================================================== */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             #sidebar {
                 position: fixed;
                 top: 0; left: 0;
                 width: 85vw; min-width: unset;
                 max-width: 320px;
                 height: 100vh;
+                height: 100dvh;
+                padding-bottom: 75px; /* 선수를 복수 추가해도 최하단 3D 고도 슬라이더가 잘리지 않도록 안전 여백 확보 */
+                -webkit-overflow-scrolling: touch;
                 box-shadow: 6px 0 20px rgba(0,0,0,0.6);
             }
             #sidebar.collapsed { margin-left: -100vw; }
@@ -506,13 +537,19 @@
             #style-switch-wrap { top: 12px; right: 12px; }
             #style-switch-wrap label { padding: 4px 6px; font-size: 0.65rem; }
 
-            #top-scoreboard-bar { top: 46px; right: 12px; max-height: calc(100vh - 160px); }
+            #top-scoreboard-bar { 
+                top: 46px; 
+                right: 12px; 
+                max-height: calc(100vh - 160px); 
+                max-height: calc(100dvh - 160px); 
+            }
             .card-callsign { font-size: 0.72rem; }
 
             #player-bar {
-                bottom: 14px;
+                bottom: 16px;
                 padding: 6px 12px;
                 gap: 8px;
+                max-width: 90vw;
             }
             #btn-play { width: 32px; height: 32px; font-size: 0.9rem; }
             #speed-select { font-size: 0.72rem; padding: 3px 5px; }
@@ -526,7 +563,8 @@
 
             #geo-modal-box {
                 width: 95vw;
-                height: 92vh;
+                height: 90vh;
+                height: 90dvh;
                 padding: 10px;
             }
             #geo-step-title { font-size: 0.85rem; }
@@ -829,8 +867,8 @@
             if (e.key === '[' || e.key === ']') toggleSidebar();
         });
 
-        // 모바일 화면 접속 시 기본적으로 사이드바 닫기
-        if (window.innerWidth <= 768) {
+        // 모바일 및 태블릿 화면 접속 시 기본적으로 사이드바 닫기 (넓은 지도 뷰 확보)
+        if (window.innerWidth <= 1024) {
             toggleSidebar(true);
         }
 
