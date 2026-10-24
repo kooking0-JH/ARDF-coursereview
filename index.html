@@ -654,8 +654,8 @@
         <div class="control-group">
             <label class="section-title">6. 3D 고도 입체감</label>
             <div class="slider-wrap">
-                <input type="range" id="exag-slider" min="1.0" max="5.0" step="0.2" value="1.0">
-                <span class="slider-value" id="exag-val">1.0x</span>
+                <input type="range" id="exag-slider" min="1.0" max="5.0" step="0.2" value="1.5">
+                <span class="slider-value" id="exag-val">1.5x</span>
             </div>
         </div>
     </div>
@@ -683,7 +683,7 @@
             <label for="style-topo">등고선</label>
             
             <input type="radio" id="style-sat" name="map-style" value="sat">
-            <label for="style-sat">위성 3D</label>
+            <label for="style-sat">위성 2D</label>
             
             <input type="radio" id="style-map2d" name="map-style" value="map2d" disabled>
             <label for="style-map2d" id="lbl-map2d">경기 2D</label>
@@ -748,7 +748,7 @@
         mapboxgl.accessToken = 'pk.eyJ1Ijoia29va2luZzAiLCJhIjoiY212ZXBiZjNkMDBuMjJ5cHZ6bHQwZTg3ciJ9.11OKHXg95xnoPWWjipcqYA';
 
         const PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e84393'];
-        let currentExag = 3.0; // 정확도 : 높음
+        let currentExag = 1.5; // 정확도 : 높음
 
         const map = new mapboxgl.Map({
             container: 'map-container',
@@ -801,10 +801,17 @@
                 }
             });
 
+            // Google Satellite 4중 분산 타일 소스
             map.addSource('satellite-source', {
                 'type': 'raster',
-                'url': 'mapbox://mapbox.satellite',
-                'tileSize': 512
+                'tiles': [
+                    'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+                    'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+                    'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+                    'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                ],
+                'tileSize': 256,
+                'maxzoom': 20
             });
             map.addLayer({
                 'id': 'satellite-layer',
@@ -942,23 +949,36 @@
         // 지도 스타일 전환
         function applyMapStyle(mode) {
             const hasCustomMap = !!map.getLayer('custom-map-layer');
+            const hasHillshade = !!map.getLayer('terrain-hillshade');
 
             if (mode === 'topo') {
                 if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
                 if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
+                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'visible');
+                // 등고선 모드: 3D 지형 활성화 및 입체 뷰 복원
                 map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                if (map.getPitch() === 0) {
+                    map.easeTo({ pitch: 65, duration: 600 });
+                }
             } else if (mode === 'sat') {
                 if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
                 if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
+                // 위성 2D: 고도 연산 해제 및 평면 뷰 전환
+                map.setTerrain(null);
+                map.easeTo({ pitch: 0, duration: 600 });
             } else if (mode === 'map2d') {
+                // 경기 2D: 베이스를 위성 2D로 제공하고 그 위에 종이 경기 지도 배치
                 if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
-                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
                 map.setTerrain(null);
                 map.easeTo({ pitch: 0, duration: 700 });
             } else if (mode === 'map3d') {
+                // 경기 3D: 등고선 3D 지형 위에 종이 경기 지도 랩핑
                 if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
                 if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
                 map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
                 map.easeTo({ pitch: 65, duration: 700 });
             }
@@ -1295,9 +1315,7 @@
             }
         });
 
-        // ==========================================
         // 모바일 터치 제어 (핀치 줌 & 터치 패닝 & 핀 이동)
-        // ==========================================
         let isPinching = false;
         let pinchStartDist = 0;
         let pinchStartScale = 1.0;
@@ -1543,8 +1561,12 @@
             geoState.p1Map = null;
             geoState.p2Map = null;
 
-            if (map.getSource('mapbox-dem') && currentExag > 0) {
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            const curStyle = document.querySelector('input[name="map-style"]:checked')?.value;
+            if (curStyle === 'topo' || curStyle === 'map3d') {
+                if (map.getSource('mapbox-dem') && currentExag > 0) {
+                    map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                }
+                map.easeTo({ pitch: 65, duration: 500 });
             }
             if (map.getLayer('custom-map-layer')) {
                 map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
