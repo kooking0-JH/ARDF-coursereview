@@ -9,27 +9,28 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            font-family: '맑은 고딕', sans-serif; 
-            display: flex; 
-            height: 100vh; 
-            height: 100dvh; /* 모바일 브라우저 주소창/하단 툴바 변동 동적 반영 */
-            overflow: hidden; 
-            background: #1a252f; 
+        body {
+            margin: 0;
+            font-family: '맑은 고딕', sans-serif;
+            display: flex;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            background: #1a252f;
         }
-        
+
         /* 좌측 사이드바 */
-        #sidebar { 
+        #sidebar {
             width: 320px; min-width: 320px;
-            background: #2c3e50; color: #ecf0f1; 
-            padding: 18px; display: flex; flex-direction: column; 
+            background: #2c3e50; color: #ecf0f1;
+            padding: 18px; display: flex; flex-direction: column;
             gap: 12px; box-shadow: 4px 0 16px rgba(0,0,0,0.4);
             z-index: 20; overflow-y: auto;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             scrollbar-width: thin;
             scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+            box-sizing: border-box;
         }
         #sidebar.collapsed { margin-left: -320px; }
 
@@ -37,25 +38,30 @@
         #sidebar::-webkit-scrollbar,
         #runner-list-box::-webkit-scrollbar,
         #tx-list-box::-webkit-scrollbar,
-        #top-scoreboard-bar::-webkit-scrollbar { width: 5px; }
+        #top-scoreboard-bar::-webkit-scrollbar,
+        #split-body::-webkit-scrollbar { width: 5px; height: 5px; }
         #sidebar::-webkit-scrollbar-track,
         #runner-list-box::-webkit-scrollbar-track,
         #tx-list-box::-webkit-scrollbar-track,
-        #top-scoreboard-bar::-webkit-scrollbar-track { background: transparent; }
+        #top-scoreboard-bar::-webkit-scrollbar-track,
+        #split-body::-webkit-scrollbar-track { background: transparent; }
         #sidebar::-webkit-scrollbar-button,
         #runner-list-box::-webkit-scrollbar-button,
         #tx-list-box::-webkit-scrollbar-button,
-        #top-scoreboard-bar::-webkit-scrollbar-button { display: none !important; }
+        #top-scoreboard-bar::-webkit-scrollbar-button,
+        #split-body::-webkit-scrollbar-button { display: none !important; }
         #sidebar::-webkit-scrollbar-thumb,
         #runner-list-box::-webkit-scrollbar-thumb,
         #tx-list-box::-webkit-scrollbar-thumb,
-        #top-scoreboard-bar::-webkit-scrollbar-thumb {
+        #top-scoreboard-bar::-webkit-scrollbar-thumb,
+        #split-body::-webkit-scrollbar-thumb {
             background: transparent; border-radius: 4px; transition: background 0.3s;
         }
         #sidebar:hover::-webkit-scrollbar-thumb,
         #runner-list-box:hover::-webkit-scrollbar-thumb,
         #tx-list-box:hover::-webkit-scrollbar-thumb,
-        #top-scoreboard-bar:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); }
+        #top-scoreboard-bar:hover::-webkit-scrollbar-thumb,
+        #split-body:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); }
         #sidebar::-webkit-scrollbar-thumb:hover { background: #e74c3c !important; }
 
         /* 상단 헤더 스티키 고정 */
@@ -78,7 +84,7 @@
         }
         #btn-sidebar-close:hover { background: #e74c3c; color: #ffffff; border-color: #ffffff; }
 
-        /* 지도 위 메뉴 열기 버튼 [ ☰ ] */
+        /* 지도 위 메뉴 열기 버튼 */
         #btn-menu-open {
             position: absolute; top: 16px; left: 16px;
             width: 42px; height: 42px;
@@ -144,25 +150,23 @@
             white-space: nowrap;
             user-select: none;
         }
-        #style-switch-wrap label:last-child { border-right: none; }
-        #style-switch-wrap input[type="radio"]:checked + label {
-            background: #e74c3c;
-            color: #ffffff;
+        #btn-view-toggle {
+            background: #f1c40f; color: #1a252f; border: none; border-left: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 10px; font-size: 0.72rem; font-weight: 900; cursor: pointer; min-width: 38px;
         }
+        #btn-view-toggle.is-3d { background: #00cec9; }
+        #style-switch-wrap input[type="radio"]:checked + label { background: #e74c3c; color: #ffffff; }
         #style-switch-wrap input[type="radio"]:disabled + label {
-            opacity: 0.35;
-            cursor: not-allowed;
-            background: transparent;
-            color: #7f8c8d;
+            opacity: 0.35; cursor: not-allowed; background: transparent; color: #7f8c8d;
         }
 
-        /* 초슬림 선수 콜사인 미니 태그 */
+        /* 선수 콜사인 미니 태그 */
         #top-scoreboard-bar {
             position: absolute; top: 52px; right: 16px;
             display: flex; flex-direction: column;
             align-items: flex-end; gap: 5px; z-index: 14;
-            max-height: calc(100vh - 120px); 
-            max-height: calc(100dvh - 120px); 
+            max-height: calc(100vh - 120px);
+            max-height: calc(100dvh - 120px);
             overflow-y: auto;
         }
         .runner-score-card {
@@ -178,14 +182,13 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
         }
+        .runner-score-card.selected { border-color: rgba(255, 255, 255, 0.7); background: rgba(31, 58, 82, 0.95); }
         .runner-score-card:hover {
             background: rgba(44, 62, 80, 0.98);
             transform: translateX(-3px);
             border-color: rgba(255, 255, 255, 0.35);
         }
-        .card-color-dot {
-            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-        }
+        .card-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .card-callsign {
             font-weight: 800; font-size: 0.78rem; color: #ffffff;
             letter-spacing: 0.3px; white-space: nowrap;
@@ -196,7 +199,7 @@
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .runner-score-card:hover .card-stats {
-            max-width: 140px; opacity: 1;
+            max-width: 200px; opacity: 1;
             margin-left: 4px; padding-left: 6px;
             border-left: 1px solid rgba(255, 255, 255, 0.2);
         }
@@ -204,16 +207,21 @@
         .control-group { background: #34495e; padding: 12px 14px; border-radius: 8px; }
         label.section-title { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.85rem; color: #bdc3c7; }
         select, input[type="file"], input[type="text"] { width: 100%; padding: 7px; border-radius: 4px; border: 1px solid #7f8c8d; background: #fff; color: #333; font-size: 0.85rem; box-sizing: border-box; }
+        input[type="number"] { width: 64px; padding: 5px; border-radius: 4px; border: 1px solid #7f8c8d; background: #fff; color: #333; font-size: 0.8rem; box-sizing: border-box; }
+        .hint { font-size: 0.7rem; color: #95a5a6; margin-top: 6px; line-height: 1.4; }
+        .inline-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.75rem; color: #bdc3c7; }
+        .sub-title-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 
         /* 토글 모드 스위치 */
         .mode-switch { display: flex; background: #243342; border-radius: 4px; border: 1px solid #7f8c8d; overflow: hidden; flex-wrap: wrap; }
         .mode-switch input[type="radio"] { display: none; }
-        .mode-switch label { 
-            flex: 1 1 50%; min-width: 50%; text-align: center; padding: 7px 0; 
-            cursor: pointer; font-size: 0.78rem; color: #bdc3c7; 
-            transition: all 0.2s ease; box-sizing: border-box; 
-            border-right: 1px solid #34495e; border-bottom: 1px solid #34495e;
+        .mode-switch label {
+            flex: 1 1 50%; min-width: 50%; text-align: center; padding: 7px 0;
+            cursor: pointer; font-size: 0.78rem; color: #bdc3c7;
+            transition: all 0.2s ease; box-sizing: border-box;
+            border-right: 1px solid #34495e;
         }
+        .mode-switch label:last-of-type { border-right: none; }
         .mode-switch input[type="radio"]:checked + label { background: #e74c3c; color: white; font-weight: bold; }
         .mode-switch input[type="radio"]:disabled + label { opacity: 0.35; cursor: not-allowed; background: #1a252f; color: #7f8c8d; }
 
@@ -230,31 +238,39 @@
             font-weight: bold; font-size: 0.8rem; border: none; margin-top: 6px;
         }
         .btn-sub-action:hover { background: #9b59b6; }
+        .btn-sub-action.secondary { background: #34495e; border: 1px solid #7f8c8d; }
+        .btn-sub-action.secondary:hover { background: #4a6278; }
+        .mini-btn {
+            background: #243342; color: #bdc3c7; border: 1px solid #7f8c8d; border-radius: 4px;
+            font-size: 0.7rem; padding: 3px 8px; cursor: pointer;
+        }
+        .mini-btn:hover { color: #fff; background: #4a6278; }
 
         .btn-del-item {
             background: #c0392b; color: white; border: none; width: 22px; height: 22px;
             border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s; flex-shrink: 0;
         }
         .btn-del-item:hover { background: #e74c3c; }
 
-        /* 선수 목록: 스크롤 격리 */
-        #runner-list-box { 
-            max-height: 120px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            margin-top: 8px; 
+        /* 선수 목록 */
+        #runner-list-box {
+            max-height: 150px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
             overscroll-behavior: contain;
         }
-        .runner-item { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #243342; padding: 6px 8px 6px 10px; border-radius: 4px; 
-            font-size: 0.8rem; border-left: 4px solid #fff; 
+        .runner-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #243342; padding: 6px 8px 6px 10px; border-radius: 4px;
+            font-size: 0.8rem; border-left: 4px solid #fff; cursor: pointer;
         }
+        .runner-item.selected { background: #1f3a52; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
         .runner-info-wrap { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
-        .runner-name-tag { font-weight: bold; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+        .runner-name-tag { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
         .runner-stats-tag { color: #bdc3c7; font-size: 0.72rem; }
 
         /* TX 배치 그리드 */
@@ -266,15 +282,15 @@
         }
         .btn-tx-pick:hover { background: #34495e; color: #f1c40f; }
         .btn-tx-pick.active { background: #8e44ad; color: #fff; border-color: #9b59b6; box-shadow: 0 0 8px rgba(155,89,182,0.8); }
+        .btn-tx-pick.placed { border-color: #2ecc71; }
 
-        /* 송신기 목록: 스크롤 격리 */
-        #tx-list-box { 
-            max-height: 110px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 5px; 
-            margin-top: 8px; 
+        #tx-list-box {
+            max-height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 8px;
             overscroll-behavior: contain;
         }
         .tx-list-item {
@@ -283,19 +299,18 @@
             border-left: 3px solid #9b59b6;
         }
 
-        /* 슬라이더 컨트롤 */
+        /* 슬라이더 */
         .slider-wrap { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
         .slider-wrap input[type="range"] { flex-grow: 1; cursor: pointer; }
         .slider-value { width: 45px; text-align: right; font-weight: bold; color: #e67e22; font-size: 0.82rem; }
 
-        /* 미세 조정 박스 */
         #map-fine-tuning { display: none; flex-direction: column; gap: 6px; margin-top: 10px; border-top: 1px solid #4a6278; padding-top: 8px; }
-        .tuning-label { font-size: 0.75rem; color: #bdc3c7; margin-bottom: 2px; }
+        .tuning-label { font-size: 0.75rem; color: #bdc3c7; margin-bottom: 2px; display: block; }
 
         /* 중앙 지도 영역 */
         #map-container { flex-grow: 1; height: 100%; position: relative; }
 
-        /* 지도 상단 대화형 안내 배너 */
+        /* 안내 배너 */
         #guide-banner {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(26, 37, 47, 0.96); color: #ffffff;
@@ -303,11 +318,11 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.55); z-index: 100; display: none;
             align-items: center; gap: 10px; border: 2px solid #f39c12;
             transition: all 0.3s ease; max-width: 92%; flex-wrap: wrap; justify-content: center;
+            box-sizing: border-box;
         }
         .step-badge {
             display: inline-block; padding: 3px 9px; border-radius: 6px;
-            font-size: 0.8rem; font-weight: 900; letter-spacing: 0.5px;
-            color: #fff;
+            font-size: 0.8rem; font-weight: 900; letter-spacing: 0.5px; color: #fff;
         }
         .badge-step1 { background: #e74c3c; }
         .badge-step2 { background: #3498db; }
@@ -319,30 +334,26 @@
             50% { transform: translateX(-50%) scale(1.04); }
             100% { transform: translateX(-50%) scale(1.0); }
         }
-        .banner-pulse-anim {
-            animation: banner-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        .banner-pulse-anim { animation: banner-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
         .btn-banner-sub {
             background: #34495e; border: 1px solid rgba(255,255,255,0.3); color: #ecf0f1;
             padding: 4px 10px; border-radius: 14px; cursor: pointer; font-size: 0.78rem; font-weight: bold;
-            transition: background 0.2s;
         }
         .btn-banner-sub:hover { background: #4a6278; }
         .btn-banner-main {
             background: #27ae60; border: none; color: #fff;
             padding: 5px 14px; border-radius: 14px; cursor: pointer; font-size: 0.82rem; font-weight: 900;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        .btn-banner-main:hover { background: #2ecc71; transform: scale(1.04); }
-
+        .btn-banner-main:hover { background: #2ecc71; }
         #btn-cancel-guide {
             background: #c0392b; border: none; color: white; padding: 4px 12px;
             border-radius: 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
         }
         #btn-cancel-guide:hover { background: #e74c3c; }
 
-        /* 실제 지도 위 2점 마커 핀 */
+        /* 실제 지도 위 정합 핀 */
         .map-geo-pin {
             width: 26px; height: 26px; border-radius: 50%;
             border: 3px solid #ffffff; color: #ffffff;
@@ -350,65 +361,8 @@
             align-items: center; justify-content: center;
             box-shadow: 0 4px 14px rgba(0,0,0,0.85); cursor: grab;
             user-select: none;
-            animation: pin-drop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .map-geo-pin:active { cursor: grabbing; }
-
-        /* 22px 솔리드 화살표 마커 */
-        .runner-marker-container {
-            position: relative;
-            width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; user-select: none;
-        }
-
-        /* 3px 레이더 파동 펄스 링 */
-        .runner-pulse {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            border-width: 3px;
-            border-style: solid;
-            box-sizing: border-box;
-            pointer-events: none;
-            z-index: 1;
-            animation: radar-wave 1.8s infinite cubic-bezier(0.2, 0.6, 0.35, 1);
-        }
-        @keyframes radar-wave {
-            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.7; }
-            70% { opacity: 0.18; }
-            100% { transform: translate(-50%, -50%) scale(1.85); opacity: 0; }
-        }
-
-        /* 화살표 꼭지점 머리 위 밀착 텍스트 */
-        .runner-badge {
-            position: absolute;
-            bottom: 100%; left: 50%;
-            transform: translateX(-50%) translateY(0);
-            background: transparent; color: #ffffff;
-            font-size: 11px; font-weight: 900; padding: 0;
-            border: none;
-            margin-bottom: 1px; white-space: nowrap;
-            text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 6px rgba(0,0,0,0.95);
-            letter-spacing: 0.4px;
-            opacity: 1; pointer-events: none;
-            z-index: 10;
-        }
-
-        .runner-arrow-wrap {
-            position: relative; z-index: 2;
-            width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center;
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.85));
-            transition: transform 0.15s ease;
-        }
-        .runner-marker-container:hover .runner-arrow-wrap { transform: scale(1.15); }
-        .runner-arrow-inner {
-            width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center;
-            transform-origin: center center;
-        }
 
         .iof-tx-marker {
             width: 24px; height: 24px; border-radius: 50%;
@@ -423,18 +377,26 @@
             border-bottom: 24px solid #8e44ad; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
             cursor: pointer;
         }
+        .iof-finish-marker {
+            width: 26px; height: 26px; border-radius: 50%; box-sizing: border-box;
+            border: 3px solid #8e44ad; background: rgba(255,255,255,0.85);
+            position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.7); cursor: pointer;
+        }
+        .iof-finish-marker::after {
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; border: 3px solid #8e44ad;
+        }
 
-        /* 하단 반응형 플레이어 (가변 너비) */
+        /* 하단 플레이어 */
         #player-bar {
             position: absolute; bottom: 25px; left: 50%;
             transform: translateX(-50%);
             background: rgba(33, 47, 61, 0.95); backdrop-filter: blur(6px);
-            padding: 8px 18px; border-radius: 35px;
-            display: none; align-items: center; gap: 12px;
+            padding: 8px 14px; border-radius: 35px;
+            display: none; align-items: center; gap: 10px;
             color: #ecf0f1; box-shadow: 0 8px 25px rgba(0,0,0,0.45);
             z-index: 5;
             width: calc(100% - 32px);
-            max-width: 460px;
+            max-width: 560px;
             box-sizing: border-box;
         }
         #btn-play {
@@ -442,69 +404,72 @@
             width: 36px; height: 36px; border-radius: 50%;
             font-size: 1rem; cursor: pointer; display: flex;
             align-items: center; justify-content: center; flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s, background 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
-        #btn-play:hover { background: #ff5252; transform: scale(1.05); }
-        #timeline { flex-grow: 1; width: auto; min-width: 80px; cursor: pointer; accent-color: #e74c3c; }
-        #speed-select { background: #243342; color: white; border: 1px solid #7f8c8d; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
-
-        /* 2점 정합 모달 뷰포트 */
+        #btn-play:hover { background: #ff5252; }
+        #race-clock {
+            font-variant-numeric: tabular-nums; font-weight: bold; font-size: 0.8rem;
+            min-width: 58px; text-align: center; color: #f1c40f; flex-shrink: 0;
+        }
+        #timeline { flex-grow: 1; width: auto; min-width: 60px; cursor: pointer; accent-color: #e74c3c; }
+        #speed-select { width: auto; background: #243342; color: white; border: 1px solid #7f8c8d; border-radius: 4px; padding: 4px 6px; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
+        /* 지도 펴기·정합 모달 */
         #geo-modal {
-            position: fixed; top: 0; left: 0; width: 100vw; 
+            position: fixed; top: 0; left: 0; width: 100vw;
             height: 100vh; height: 100dvh;
             background: rgba(0,0,0,0.85); z-index: 200; display: none;
             flex-direction: column; align-items: center; justify-content: center;
         }
         #geo-modal-box {
             background: #2c3e50; border-radius: 10px; padding: 18px; width: 88vw; max-width: 960px;
-            height: 84vh; height: 84dvh; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+            height: 84vh; height: 84dvh; display: flex; flex-direction: column; gap: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7); box-sizing: border-box;
         }
         #geo-modal-header { display: flex; justify-content: space-between; align-items: center; color: #fff; flex-wrap: wrap; gap: 8px; }
         #geo-step-title {
-            font-weight: 800; font-size: 1.02rem; color: #f1c40f;
-            display: flex; align-items: center; gap: 8px;
+            font-weight: 800; font-size: 1.0rem; color: #f1c40f;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
-
         .btn-modal-sub {
             background: #34495e; border: 1px solid rgba(255,255,255,0.3); color: #ecf0f1;
             padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
-            transition: background 0.2s;
         }
         .btn-modal-sub:hover { background: #4a6278; }
         .btn-modal-action {
             background: #27ae60; border: none; color: #fff;
             padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 0.82rem; font-weight: bold;
-            transition: background 0.2s;
         }
         .btn-modal-action:hover { background: #2ecc71; }
+        #btn-close-geo { background: #c0392b; border: none; color: #fff; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
         #geo-canvas-wrap {
             flex-grow: 1; position: relative; overflow: hidden;
             background: #111a22; border-radius: 6px;
             cursor: crosshair; user-select: none;
-            touch-action: none; /* 모바일 브라우저 기본 스크롤/확대 제스처 차단 */
+            touch-action: none;
         }
+        #geo-stage { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+        #geo-stage canvas { display: block; pointer-events: none; }
+        #pick-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 14; }
+        #pick-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
 
-        #geo-stage {
-            position: absolute; top: 0; left: 0;
-            transform-origin: 0 0;
-            will-change: transform;
+        /* 가운데가 비어 있는 조준 핀: 정확한 지점이 가려지지 않음 */
+        .pick-pin {
+            position: absolute; width: 28px; height: 28px; border-radius: 50%;
+            transform: translate(-50%, -50%); box-sizing: border-box;
+            border: 3px solid var(--pin, #e74c3c);
+            box-shadow: 0 0 0 1.5px #fff, 0 0 0 1.5px #fff inset, 0 2px 8px rgba(0,0,0,0.8);
+            pointer-events: auto; cursor: grab; touch-action: none;
         }
-        #geo-canvas-img {
-            display: block; pointer-events: none;
-            user-select: none; -webkit-user-drag: none;
+        .pick-pin::after {
+            content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px;
+            transform: translate(-50%, -50%); border-radius: 50%; background: var(--pin, #e74c3c);
+            box-shadow: 0 0 0 1px #fff;
         }
-
-        /* 드래그 가능한 종이 지도 핀 */
-        .geo-dot {
-            position: absolute; width: 26px; height: 26px; border-radius: 50%;
-            transform: translate(-50%, -50%); border: 3px solid #fff;
-            font-size: 12px; font-weight: 900; color: white; display: flex;
-            align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.85);
-            z-index: 15; pointer-events: auto; cursor: grab; user-select: none;
+        .pick-pin-label {
+            position: absolute; left: 20px; top: -14px; background: var(--pin, #e74c3c); color: #fff;
+            font-size: 11px; font-weight: 900; padding: 1px 6px; border-radius: 8px; border: 1.5px solid #fff;
         }
-        .geo-dot:active { cursor: grabbing; }
-
         #geo-zoom-hint {
             position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.75); color: #ecf0f1; padding: 5px 14px;
@@ -512,9 +477,13 @@
             border: 1px solid rgba(255,255,255,0.2); z-index: 20; white-space: nowrap;
         }
 
-        /* ========================================================
-           모바일 및 태블릿 최적화 미디어 쿼리 (화면 폭 1024px 이하 대응)
-           ======================================================== */
+        #busy-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300;
+            display: none; align-items: center; justify-content: center;
+            color: #fff; font-weight: bold; font-size: 1rem;
+        }
+
+        /* 모바일·태블릿 (1024px 이하) */
         @media (max-width: 1024px) {
             #sidebar {
                 position: fixed;
@@ -523,7 +492,7 @@
                 max-width: 320px;
                 height: 100vh;
                 height: 100dvh;
-                padding-bottom: 75px; /* 선수를 복수 추가해도 최하단 3D 고도 슬라이더가 잘리지 않도록 안전 여백 확보 */
+                padding-bottom: 75px;
                 -webkit-overflow-scrolling: touch;
                 box-shadow: 6px 0 20px rgba(0,0,0,0.6);
             }
@@ -536,39 +505,36 @@
 
             #style-switch-wrap { top: 12px; right: 12px; }
             #style-switch-wrap label { padding: 4px 6px; font-size: 0.65rem; }
+            #btn-view-toggle { padding: 4px 8px; font-size: 0.65rem; }
 
-            #top-scoreboard-bar { 
-                top: 46px; 
-                right: 12px; 
-                max-height: calc(100vh - 160px); 
-                max-height: calc(100dvh - 160px); 
+            #top-scoreboard-bar {
+                top: 46px; right: 12px;
+                max-height: calc(100vh - 160px);
+                max-height: calc(100dvh - 160px);
             }
             .card-callsign { font-size: 0.72rem; }
 
-            #player-bar {
-                bottom: 16px;
-                padding: 6px 12px;
-                gap: 8px;
-                max-width: 90vw;
-            }
+            #player-bar { bottom: 16px; padding: 6px 10px; gap: 6px; max-width: 94vw; }
             #btn-play { width: 32px; height: 32px; font-size: 0.9rem; }
-            #speed-select { font-size: 0.72rem; padding: 3px 5px; }
+            #race-clock { min-width: 48px; font-size: 0.72rem; }
+            #speed-select { font-size: 0.72rem; padding: 3px 4px; }
 
-            #guide-banner {
-                top: 50px;
-                font-size: 0.76rem;
-                padding: 6px 12px;
-                width: 90%;
-            }
+            #guide-banner { top: 50px; font-size: 0.76rem; padding: 6px 12px; width: 90%; }
 
-            #geo-modal-box {
-                width: 95vw;
-                height: 90vh;
-                height: 90dvh;
-                padding: 10px;
-            }
+            #geo-modal-box { width: 95vw; height: 90vh; height: 90dvh; padding: 10px; }
             #geo-step-title { font-size: 0.85rem; }
             #geo-zoom-hint { font-size: 0.7rem; padding: 4px 10px; }
+        }
+
+        /* 좁은 휴대폰: 지도 스타일 바가 검색창과 겹치지 않도록 한 줄 아래로 */
+        @media (max-width: 600px) {
+            #style-switch-wrap { top: 54px; }
+            #top-scoreboard-bar {
+                top: 88px;
+                max-height: calc(100vh - 200px);
+                max-height: calc(100dvh - 200px);
+            }
+            #guide-banner { top: 92px; }
         }
     </style>
 </head>
@@ -580,28 +546,29 @@
             <h2>ARDF 3D 코스 리뷰</h2>
             <button id="btn-sidebar-close" title="사이드바 닫기 (단축키: [)">✕</button>
         </div>
-        
+
         <!-- 1. 분석 모드 -->
         <div class="control-group">
             <label class="section-title">1. 분석 모드</label>
             <div class="mode-switch">
                 <input type="radio" id="mode-gpx" name="work-mode" checked>
-                <label for="mode-gpx" style="border-bottom:none;">GPX 보기</label>
+                <label for="mode-gpx">GPX 보기</label>
                 <input type="radio" id="mode-ghost" name="work-mode">
-                <label for="mode-ghost" style="border-bottom:none; border-right:none;" title="송신기(S, TX, F)가 배치되면 AI 추천 코스가 계산됩니다">가상 코스</label>
+                <label for="mode-ghost" title="출발(S), 송신기, 피니시(F)가 배치되면 추천 코스를 계산합니다">가상 코스</label>
             </div>
         </div>
 
-        <!-- 2. 경기 지도 업로드 (모바일 카메라 즉시 촬영 지원) -->
+        <!-- 2. 경기 지도 -->
         <div class="control-group">
             <label class="section-title" for="map-upload">2. 경기 지도 업로드</label>
             <div style="display: flex; gap: 6px; align-items: center;">
                 <input type="file" id="map-upload" accept="image/*">
-                <button id="btn-del-map" class="btn-del-item" style="display: none; width: 34px; height: 32px; font-size: 14px; flex-shrink: 0;" title="지도 삭제">✕</button>
+                <button id="btn-del-map" class="btn-del-item" style="display: none; width: 34px; height: 32px; font-size: 14px;" title="지도 삭제">✕</button>
             </div>
-            
+            <div class="hint">지도를 정면에서 반듯하게 찍거나 스캔본·원본 파일을 쓰면 정확하게 맞습니다.</div>
+
             <button id="btn-open-geo-modal" class="btn-sub-action" style="display: none;">📍 2점 정밀 맞추기 (정합)</button>
-            
+
             <div id="map-fine-tuning">
                 <span class="tuning-label">지도 투명도</span>
                 <div class="slider-wrap">
@@ -621,12 +588,25 @@
             </div>
         </div>
 
-        <!-- 3. 선수 GPX 추가 (모바일 파일 선택 호환성 보강) -->
+        <!-- 3. 선수 GPX -->
         <div class="control-group" id="gpx-upload-group">
-            <label class="section-title">3. 선수 GPX 추가</label>
-            <input type="file" id="gpx-upload" accept=".gpx, application/gpx+xml, text/xml, */*" multiple style="display: none;">
-            <button class="btn-action" onclick="document.getElementById('gpx-upload').click()">+ GPX 파일 추가하기</button>
+            <label class="section-title">3. 선수 GPX</label>
+            <!-- accept 필터를 두지 않음: Windows 파일 창에서 .gpx가 걸러지거나, "(1)"이 붙어 확장자가 깨진 파일도 고를 수 있게 -->
+            <input type="file" id="gpx-upload" multiple style="display: none;">
+            <button class="btn-action" id="btn-add-gpx">+ GPX 파일 추가하기</button>
             <div id="runner-list-box"></div>
+            <div class="sub-title-row">
+                <span class="hint" style="margin:0;">선수를 누르면 전체 경로를 강조합니다</span>
+                <button class="mini-btn" id="btn-select-all">전체 선택</button>
+            </div>
+
+            <span class="tuning-label" style="margin-top:10px;">출발 방식</span>
+            <select id="start-mode">
+                <option value="compress" selected>1분 간격 출발</option>
+                <option value="same">동시 출발</option>
+                <option value="real">실제 출발 시각</option>
+            </select>
+
         </div>
 
         <!-- 4. 경기 종목 -->
@@ -639,7 +619,7 @@
             </select>
         </div>
 
-        <!-- 5. 송신기(TX) 위치 지정 -->
+        <!-- 5. 송신기 위치 -->
         <div class="control-group">
             <label class="section-title">5. 송신기(TX) 위치 지정</label>
             <div class="tx-grid" id="tx-dynamic-grid"></div>
@@ -650,7 +630,7 @@
             <div id="tx-list-box"></div>
         </div>
 
-        <!-- 6. 3D 고도 입체감 -->
+        <!-- 6. 3D 고도 -->
         <div class="control-group">
             <label class="section-title">6. 3D 고도 입체감</label>
             <div class="slider-wrap">
@@ -660,10 +640,9 @@
         </div>
     </div>
 
-    <!-- 중앙 3D 지도 영역 -->
+    <!-- 중앙 3D 지도 -->
     <div id="map-container">
-        <!-- 메뉴 열기 버튼 [ ☰ ] -->
-        <button id="btn-menu-open" title="메뉴 열기 [단축키: []" aria-label="메뉴 열기">
+        <button id="btn-menu-open" title="메뉴 열기 (단축키: [)" aria-label="메뉴 열기">
             <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="20" height="2.8" rx="1.4" fill="#ffffff"/>
                 <rect y="6.6" width="20" height="2.8" rx="1.4" fill="#ffffff"/>
@@ -671,44 +650,36 @@
             </svg>
         </button>
 
-        <!-- 플로팅 검색바 -->
         <div id="map-search-bar">
             <input type="text" id="map-search-input" placeholder="경기장, 지명 검색 (Enter)">
             <button id="btn-map-search" title="검색">🔍</button>
         </div>
 
-        <!-- 우측 상단 플로팅 지도 스타일 바 -->
         <div id="style-switch-wrap">
-            <input type="radio" id="style-topo" name="map-style" value="topo" checked>
-            <label for="style-topo">등고선</label>
-            
-            <input type="radio" id="style-sat" name="map-style" value="sat">
-            <label for="style-sat">위성 2D</label>
-            
-            <input type="radio" id="style-map2d" name="map-style" value="map2d" disabled>
-            <label for="style-map2d" id="lbl-map2d">경기 2D</label>
-            
-            <input type="radio" id="style-map3d" name="map-style" value="map3d" disabled>
-            <label for="style-map3d" id="lbl-map3d">경기 3D</label>
+            <input type="radio" id="style-topo" name="map-style" value="topo">
+            <label for="style-topo" title="등고선 지도">등고선</label>
+            <input type="radio" id="style-sat" name="map-style" value="sat" checked>
+            <label for="style-sat" title="위성 사진">위성</label>
+            <input type="radio" id="style-map" name="map-style" value="map" disabled>
+            <label for="style-map" title="올린 종이 경기 지도">경기 지도</label>
+            <button id="btn-view-toggle" title="2D(평면) / 3D(입체) 시점 전환">2D</button>
         </div>
 
-        <!-- 지도 상단 중앙 대화형 안내 배너 -->
         <div id="guide-banner">
             <span id="guide-text">안내 메시지</span>
             <div id="banner-actions" style="display: flex; gap: 6px; align-items: center;">
                 <button id="btn-banner-redo" class="btn-banner-sub" style="display: none;">↺ 다시 찍기</button>
                 <button id="btn-banner-back" class="btn-banner-sub" style="display: none;">◀ 이전 단계</button>
                 <button id="btn-banner-confirm" class="btn-banner-main" style="display: none;">확인</button>
-                <button id="btn-cancel-guide">취소</button>
+                <button id="btn-cancel-guide">닫기</button>
             </div>
         </div>
 
-        <!-- 우측 상단 선수 미니 태그 컨테이너 -->
         <div id="top-scoreboard-bar"></div>
 
-        <!-- 하단 슬림형 플레이어 -->
         <div id="player-bar">
-            <button id="btn-play">▶</button>
+            <button id="btn-play" title="재생/정지 (스페이스바)">▶</button>
+            <span id="race-clock">0:00</span>
             <input type="range" id="timeline" min="0" max="1000" value="0" step="1">
             <select id="speed-select">
                 <option value="1">1x</option>
@@ -716,46 +687,50 @@
                 <option value="10" selected>10x</option>
                 <option value="25">25x</option>
                 <option value="50">50x</option>
+                <option value="100">100x</option>
             </select>
         </div>
     </div>
 
-    <!-- 2점 정밀 정합 전용 모달 창 -->
+    <!-- 지도 펴기 / 2점 정합 모달 -->
     <div id="geo-modal">
         <div id="geo-modal-box">
             <div id="geo-modal-header">
-                <div id="geo-step-title">
-                    <span class="step-badge badge-step1">1단계</span>
-                    <span>종이 지도를 확대하여 <b>[기준점 1 (출발 △)]</b>을 클릭하세요</span>
-                </div>
-                <div id="geo-header-actions" style="display: flex; gap: 8px; align-items: center;">
-                    <button id="btn-geo-redo1" class="btn-modal-sub" style="display: none;">↺ 1번 다시</button>
-                    <button id="btn-geo-redo2" class="btn-modal-sub" style="display: none;">↺ 2번 다시</button>
-                    <button id="btn-geo-next" class="btn-modal-action" style="display: none;">➔ 2단계 진행</button>
-                    <button id="btn-close-geo" style="background:#c0392b; border:none; color:#fff; padding:5px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">✕ 닫기</button>
+                <div id="geo-step-title"></div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button id="btn-pick-undo" class="btn-modal-sub" style="display: none;">↺ 마지막 점 취소</button>
+                    <button id="btn-pick-next" class="btn-modal-action" style="display: none;">다음</button>
+                    <button id="btn-close-geo">✕ 닫기</button>
                 </div>
             </div>
             <div id="geo-canvas-wrap">
-                <div id="geo-stage">
-                    <img id="geo-canvas-img" src="" alt="종이 지도">
-                </div>
-                <div id="geo-zoom-hint">🔍 두 손가락으로 확대/축소 및 이동 가능 (핀을 드래그해 미세조정)</div>
+                <div id="geo-stage"></div>
+                <svg id="pick-svg">
+                    <polyline id="pick-polyline" fill="none" stroke="#f1c40f" stroke-width="2" stroke-dasharray="6 4"></polyline>
+                </svg>
+                <div id="pick-overlay"></div>
+                <div id="geo-zoom-hint">🔍 휠·두 손가락으로 확대/이동 · 핀을 끌어 미세조정</div>
             </div>
         </div>
     </div>
 
+    <div id="busy-overlay"><span id="busy-text">처리 중...</span></div>
+
     <script>
+        // 공개 저장소에 올릴 경우 Mapbox 계정에서 이 토큰에 URL 제한을 꼭 걸어 두세요.
         mapboxgl.accessToken = 'pk.eyJ1Ijoia29va2luZzAiLCJhIjoiY212ZXBiZjNkMDBuMjJ5cHZ6bHQwZTg3ciJ9.11OKHXg95xnoPWWjipcqYA';
 
         const PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e84393'];
-        let currentExag = 1.5; // 정확도 : 높음
+        const GHOST_ID = 9999;
+        const EMPTY_FC = { type: 'FeatureCollection', features: [] };
+        let currentExag = 1.5;
 
         const map = new mapboxgl.Map({
             container: 'map-container',
             style: 'mapbox://styles/mapbox/outdoors-v12',
             center: [127.135, 35.852],
             zoom: 14.2,
-            pitch: 65,
+            pitch: 0,
             bearing: -15
         });
 
@@ -766,11 +741,7 @@
                 layers.forEach(layer => {
                     if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
                         map.setLayoutProperty(layer.id, 'text-field', [
-                            'coalesce',
-                            ['get', 'name_ko'],
-                            ['get', 'name:ko'],
-                            ['get', 'name'],
-                            ['get', 'name_en']
+                            'coalesce', ['get', 'name_ko'], ['get', 'name:ko'], ['get', 'name'], ['get', 'name_en']
                         ]);
                     }
                 });
@@ -783,112 +754,333 @@
             setMapLanguageToKorean();
 
             map.addSource('mapbox-dem', {
-                'type': 'raster-dem',
-                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-                'tileSize': 512,
-                'maxzoom': 14
+                type: 'raster-dem',
+                url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                tileSize: 512,
+                maxzoom: 14
             });
-            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            map.setTerrain({ source: 'mapbox-dem', exaggeration: currentExag });
+
+            // 위성·음영 레이어는 지명 글자 아래에 깔아서 위성 화면에서도 지명이 보이게 함
+            // 기본 스타일 맨 위쪽 글자(지명·POI) 묶음 바로 아래 위치를 찾음.
+            // 중간에 섞인 글자 레이어(등고선 숫자 등) 아래로 넣으면 땅·숲·물 색칠 레이어가
+            // 위성 사진을 덮어 버리므로, 마지막 색칠 레이어보다 위에 오도록 함.
+            const baseLayers = map.getStyle().layers || [];
+            let lastPaintIdx = -1;
+            baseLayers.forEach((l, i) => { if (l.type !== 'symbol') lastPaintIdx = i; });
+            const belowLabels = baseLayers[lastPaintIdx + 1] ? baseLayers[lastPaintIdx + 1].id : undefined;
 
             map.addLayer({
-                'id': 'terrain-hillshade',
-                'type': 'hillshade',
-                'source': 'mapbox-dem',
-                'paint': {
-                    'hillshade-exaggeration': 0.85,
+                id: 'terrain-hillshade',
+                type: 'hillshade',
+                source: 'mapbox-dem',
+                paint: {
+                    'hillshade-exaggeration': 0.4,
                     'hillshade-shadow-color': '#1a252f',
                     'hillshade-highlight-color': '#ffffff'
                 }
-            });
+            }, belowLabels);
 
-            // Google Satellite 4중 분산 타일 소스
+            // 위성 사진 타일 (처음 만드신 버전에서 잘 나오던 타일 주소 그대로 사용)
             map.addSource('satellite-source', {
-                'type': 'raster',
-                'tiles': [
+                type: 'raster',
+                tiles: [
                     'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
                     'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
                     'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
                     'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
                 ],
-                'tileSize': 256,
-                'maxzoom': 20
+                tileSize: 256,
+                maxzoom: 20
             });
             map.addLayer({
-                'id': 'satellite-layer',
-                'type': 'raster',
-                'source': 'satellite-source',
-                'layout': { 'visibility': 'none' }
+                id: 'satellite-layer',
+                type: 'raster',
+                source: 'satellite-source',
+                layout: { visibility: 'none' },
+                paint: { 'raster-fade-duration': 150 }
+            }, belowLabels);
+
+            // 기본 스타일의 등고선은 숨기고, 더 잘 보이는 ARDF용 등고선을 따로 그림
+            (map.getStyle().layers || []).forEach(l => {
+                if (l.id.includes('contour')) map.setLayoutProperty(l.id, 'visibility', 'none');
+            });
+            map.addSource('contour-source', { type: 'vector', url: 'mapbox://mapbox.mapbox-terrain-v2' });
+            map.addLayer({
+                id: 'ardf-contour',
+                type: 'line',
+                source: 'contour-source',
+                'source-layer': 'contour',
+                layout: { 'line-join': 'round', visibility: 'none' },
+                paint: {
+                    'line-color': '#a0522d',
+                    'line-width': ['case', ['>=', ['get', 'index'], 5], 1.6, 0.7],
+                    'line-opacity': ['case', ['>=', ['get', 'index'], 5], 0.95, 0.75]
+                }
+            }, belowLabels);
+            map.addLayer({
+                id: 'ardf-contour-label',
+                type: 'symbol',
+                source: 'contour-source',
+                'source-layer': 'contour',
+                filter: ['>=', ['get', 'index'], 5],
+                layout: {
+                    visibility: 'none',
+                    'symbol-placement': 'line',
+                    'text-field': ['concat', ['to-string', ['get', 'ele']], 'm'],
+                    'text-size': 10,
+                    'text-max-angle': 30
+                },
+                paint: { 'text-color': '#8b4513', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
             });
 
             map.addLayer({
-                'id': 'sky',
-                'type': 'sky',
-                'paint': {
+                id: 'sky',
+                type: 'sky',
+                paint: {
                     'sky-type': 'atmosphere',
                     'sky-atmosphere-sun': [0.0, 90.0],
                     'sky-atmosphere-sun-intensity': 15
                 }
             });
 
-            // 가상 코스 유도선
-            map.addSource('virtual-course-source', {
-                'type': 'geojson',
-                'data': { 'type': 'FeatureCollection', 'features': [] }
+            // 가상 코스 유도선 (경기 지도는 이 레이어 아래에 들어감)
+            map.addSource('virtual-course-source', { type: 'geojson', data: EMPTY_FC });
+            map.addLayer({
+                id: 'virtual-course-layer',
+                type: 'line',
+                source: 'virtual-course-source',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#f39c12', 'line-width': 2.5, 'line-dasharray': [4, 3], 'line-opacity': 0.95 }
+            });
+
+            // 선택한 선수의 전체 경로
+            map.addSource('tracks-source', { type: 'geojson', data: EMPTY_FC });
+            map.addLayer({
+                id: 'tracks-casing',
+                type: 'line',
+                source: 'tracks-source',
+                filter: trackFilter(),
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#000000', 'line-width': 6, 'line-opacity': 0.35 }
             });
             map.addLayer({
-                'id': 'virtual-course-layer',
-                'type': 'line',
-                'source': 'virtual-course-source',
-                'layout': { 'line-join': 'round', 'line-cap': 'round' },
-                'paint': {
-                    'line-color': '#f39c12',
-                    'line-width': 2.5,
-                    'line-dasharray': [4, 3],
-                    'line-opacity': 0.95
+                id: 'tracks-layer',
+                type: 'line',
+                source: 'tracks-source',
+                filter: trackFilter(),
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-opacity': 0.95 }
+            });
+
+            // 선수 화살표·이름·꼬리를 하나의 데이터로 그려서 항상 같은 화면에서 함께 움직이게 함
+            addArrowImage();
+            map.addSource('runners-source', { type: 'geojson', data: EMPTY_FC, tolerance: 0 });
+            map.addLayer({
+                id: 'tails-casing',
+                type: 'line',
+                source: 'runners-source',
+                filter: ['==', ['geometry-type'], 'LineString'],
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#000000', 'line-width': 6, 'line-opacity': 0.4 }
+            });
+            map.addLayer({
+                id: 'tails-layer',
+                type: 'line',
+                source: 'runners-source',
+                filter: ['==', ['geometry-type'], 'LineString'],
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-opacity': 0.95 }
+            });
+            map.addLayer({
+                id: 'runner-pulse',
+                type: 'circle',
+                source: 'runners-source',
+                filter: ['all', ['==', ['geometry-type'], 'Point'], ['!', ['get', 'finished']]],
+                paint: {
+                    'circle-radius': 10,
+                    'circle-color': 'rgba(0,0,0,0)',
+                    'circle-stroke-color': ['get', 'color'],
+                    'circle-stroke-width': 3,
+                    'circle-stroke-opacity': 0.6,
+                    'circle-pitch-alignment': 'map'
                 }
             });
+            map.addLayer({
+                id: 'runner-arrows',
+                type: 'symbol',
+                source: 'runners-source',
+                filter: ['==', ['geometry-type'], 'Point'],
+                layout: {
+                    'icon-image': 'runner-arrow',
+                    'icon-rotate': ['get', 'bearing'],
+                    'icon-rotation-alignment': 'map',
+                    'icon-pitch-alignment': 'map',
+                    'icon-size': ['case', ['get', 'big'], 1.3, 1.0],
+                    'icon-allow-overlap': true,
+                    'icon-ignore-placement': true
+                },
+                paint: {
+                    'icon-color': ['get', 'color'],
+                    'icon-halo-color': '#ffffff',
+                    'icon-halo-width': 1.5,
+                    'icon-opacity': ['case', ['get', 'finished'], 0.6, 1.0]
+                }
+            });
+            map.addLayer({
+                id: 'runner-labels',
+                type: 'symbol',
+                source: 'runners-source',
+                filter: ['==', ['geometry-type'], 'Point'],
+                layout: {
+                    'text-field': ['get', 'name'],
+                    'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 11,
+                    'text-anchor': 'bottom',
+                    'text-offset': [0, -1.3],
+                    'text-allow-overlap': true,
+                    'text-ignore-placement': true
+                },
+                paint: {
+                    'text-color': '#ffffff',
+                    'text-halo-color': '#000000',
+                    'text-halo-width': 1.8,
+                    'text-opacity': ['case', ['get', 'finished'], 0.7, 1.0]
+                }
+            });
+
+            refreshTrackData();
+            applyMapStyle(currentStyleMode());
+            applyView(true);
+            if (runners.length) updateSimulation(currentSimTime);
         });
 
         map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-        // 사이드바 토글 & 단축키 ([ 키) 제어
+        // 위성 사진을 못 불러오면 화면에 알림 (원인 확인용)
+        let satErrorShown = false;
+        map.on('error', (e) => {
+            console.warn('지도 오류:', e && e.error ? e.error : e);
+            if (!satErrorShown && e && e.sourceId === 'satellite-source') {
+                satErrorShown = true;
+                flashBanner('⚠️ 위성 사진을 불러오지 못했습니다 (네트워크 또는 타일 서버 문제)', 4000);
+            }
+        });
+
+        // 화살표 아이콘 (색은 선수별로 입힘): 위쪽이 진행 방향
+        function addArrowImage() {
+            if (map.hasImage('runner-arrow')) return;
+            const size = 48;
+            const c = document.createElement('canvas');
+            c.width = size; c.height = size;
+            const ctx = c.getContext('2d');
+            const k = size / 24;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(12 * k, 2 * k);
+            ctx.lineTo(21 * k, 22 * k);
+            ctx.lineTo(12 * k, 17 * k);
+            ctx.lineTo(3 * k, 22 * k);
+            ctx.closePath();
+            ctx.fill();
+            map.addImage('runner-arrow', ctx.getImageData(0, 0, size, size), { sdf: true, pixelRatio: 2 });
+        }
+
+        // 화살표를 누르면 그 선수 전체 경로 보기/숨기기
+        map.on('click', 'runner-arrows', (e) => {
+            if (isPickingMap || activeTxKey) return;
+            const f = e.features && e.features[0];
+            if (f) toggleSelect(f.properties.rid);
+        });
+        map.on('mouseenter', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey) map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey) map.getCanvas().style.cursor = ''; });
+
+        // 화살표 주변 파동 효과 (지도 레이어 방식)
+        function animatePulse(now) {
+            if (runners.length && map.getLayer('runner-pulse')) {
+                const t = (now % 1800) / 1800;
+                map.setPaintProperty('runner-pulse', 'circle-radius', 9 + t * 13);
+                map.setPaintProperty('runner-pulse', 'circle-stroke-opacity', 0.7 * (1 - t));
+            }
+            requestAnimationFrame(animatePulse);
+        }
+        requestAnimationFrame(animatePulse);
+
+        // ==========================================
+        // 사이드바 토글
+        // ==========================================
         const sidebar = document.getElementById('sidebar');
-        const btnSidebarClose = document.getElementById('btn-sidebar-close');
         const btnMenuOpen = document.getElementById('btn-menu-open');
 
         function toggleSidebar(forceCollapse) {
-            const willCollapse = (typeof forceCollapse === 'boolean') 
-                ? forceCollapse 
+            const willCollapse = (typeof forceCollapse === 'boolean')
+                ? forceCollapse
                 : !sidebar.classList.contains('collapsed');
-
             sidebar.classList.toggle('collapsed', willCollapse);
             btnMenuOpen.style.display = willCollapse ? 'flex' : 'none';
             setTimeout(() => map.resize(), 320);
         }
 
-        btnSidebarClose.addEventListener('click', () => toggleSidebar(true));
+        document.getElementById('btn-sidebar-close').addEventListener('click', () => toggleSidebar(true));
         btnMenuOpen.addEventListener('click', () => toggleSidebar(false));
 
         window.addEventListener('keydown', (e) => {
             if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            if (geoModal.style.display === 'flex') return;
             if (e.key === '[' || e.key === ']') toggleSidebar();
+            if (e.code === 'Space' && runners.length) {
+                e.preventDefault();
+                togglePlay();
+            }
         });
 
-        // 모바일 및 태블릿 화면 접속 시 기본적으로 사이드바 닫기 (넓은 지도 뷰 확보)
-        if (window.innerWidth <= 1024) {
-            toggleSidebar(true);
+        if (window.innerWidth <= 1024) toggleSidebar(true);
+
+        // ==========================================
+        // 안내 배너 공통
+        // ==========================================
+        const guideBanner = document.getElementById('guide-banner');
+        const guideText = document.getElementById('guide-text');
+        const btnBannerRedo = document.getElementById('btn-banner-redo');
+        const btnBannerBack = document.getElementById('btn-banner-back');
+        const btnBannerConfirm = document.getElementById('btn-banner-confirm');
+        const btnCancelGuide = document.getElementById('btn-cancel-guide');
+        let bannerTimer = null;
+
+        function flashBanner(text, ms) {
+            clearTimeout(bannerTimer);
+            guideText.textContent = text;
+            btnBannerRedo.style.display = 'none';
+            btnBannerBack.style.display = 'none';
+            btnBannerConfirm.style.display = 'none';
+            guideBanner.style.display = 'flex';
+            if (ms) {
+                bannerTimer = setTimeout(() => {
+                    if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none';
+                }, ms);
+            }
         }
 
+        const busyOverlay = document.getElementById('busy-overlay');
+        const busyText = document.getElementById('busy-text');
+        function setBusy(text) {
+            if (text) {
+                busyText.textContent = text;
+                busyOverlay.style.display = 'flex';
+            } else {
+                busyOverlay.style.display = 'none';
+            }
+        }
+
+        // ==========================================
         // 지명 검색
+        // ==========================================
         const mapSearchInput = document.getElementById('map-search-input');
-        const btnMapSearch = document.getElementById('btn-map-search');
 
         async function searchLocation(query) {
             const q = query.trim();
             if (!q) return;
-
-            guideText.textContent = `🔍 '${q}' 위치를 검색 중입니다...`;
-            guideBanner.style.display = 'flex';
+            flashBanner(`🔍 '${q}' 위치를 검색 중입니다...`);
 
             try {
                 const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=kr&limit=1`;
@@ -897,13 +1089,9 @@
 
                 if (data && data.length > 0) {
                     const best = data[0];
-                    const lat = parseFloat(best.lat);
-                    const lng = parseFloat(best.lon);
                     const name = best.name || best.display_name.split(',')[0];
-
-                    map.flyTo({ center: [lng, lat], zoom: 14.5, duration: 1800, essential: true });
-                    guideText.textContent = `📍 [${name}] 위치로 이동했습니다`;
-                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                    map.flyTo({ center: [parseFloat(best.lon), parseFloat(best.lat)], zoom: 14.5, duration: 1800, essential: true });
+                    flashBanner(`📍 [${name}] 위치로 이동했습니다`, 2200);
                     return;
                 }
 
@@ -914,83 +1102,107 @@
 
                 if (data.features && data.features.length > 0) {
                     const best = data.features[0];
-                    const [lng, lat] = best.center;
-
-                    map.flyTo({ center: [lng, lat], zoom: 14.5, duration: 1800, essential: true });
-                    guideText.textContent = `📍 [${best.text || best.place_name}] 위치로 이동했습니다`;
-                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                    map.flyTo({ center: best.center, zoom: 14.5, duration: 1800, essential: true });
+                    flashBanner(`📍 [${best.text || best.place_name}] 위치로 이동했습니다`, 2200);
                 } else {
-                    guideText.textContent = `⚠️ '${q}' 검색 결과를 찾을 수 없습니다`;
-                    setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2200);
+                    flashBanner(`⚠️ '${q}' 검색 결과를 찾을 수 없습니다`, 2200);
                 }
             } catch (err) {
                 console.error('검색 오류:', err);
-                guideText.textContent = `⚠️ 검색 중 오류가 발생했습니다`;
-                setTimeout(() => { if (!isPickingMap && !activeTxKey) guideBanner.style.display = 'none'; }, 2000);
+                flashBanner('⚠️ 검색 중 오류가 발생했습니다', 2000);
             }
         }
 
-        btnMapSearch.addEventListener('click', () => searchLocation(mapSearchInput.value));
+        document.getElementById('btn-map-search').addEventListener('click', () => searchLocation(mapSearchInput.value));
         mapSearchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') searchLocation(mapSearchInput.value);
         });
 
+        // ==========================================
         // 3D 고도 배율
+        // ==========================================
         const exagSlider = document.getElementById('exag-slider');
-        const exagVal = document.getElementById('exag-val');
         exagSlider.addEventListener('input', (e) => {
             currentExag = parseFloat(e.target.value);
-            exagVal.textContent = currentExag.toFixed(1) + 'x';
+            document.getElementById('exag-val').textContent = currentExag.toFixed(1) + 'x';
             if (map.getSource('mapbox-dem') && map.getTerrain()) {
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                map.setTerrain({ source: 'mapbox-dem', exaggeration: currentExag });
             }
         });
 
+        // ==========================================
         // 지도 스타일 전환
-        function applyMapStyle(mode) {
-            const hasCustomMap = !!map.getLayer('custom-map-layer');
-            const hasHillshade = !!map.getLayer('terrain-hillshade');
+        // ==========================================
+        function setVis(id, visible) {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+        }
 
-            if (mode === 'topo') {
-                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
-                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
-                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'visible');
-                // 등고선 모드: 3D 지형 활성화 및 입체 뷰 복원
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
-                if (map.getPitch() === 0) {
-                    map.easeTo({ pitch: 65, duration: 600 });
-                }
-            } else if (mode === 'sat') {
-                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
-                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'none');
-                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
-                // 위성 2D: 고도 연산 해제 및 평면 뷰 전환
+        // 바탕 지도(등고선·위성·경기 지도)와 시점(2D·3D)을 따로 고름.
+        // 바탕을 바꿔도 시점과 위치는 그대로 유지됨.
+        let viewMode = '2d';
+        const btnViewToggle = document.getElementById('btn-view-toggle');
+
+        function currentStyleMode() {
+            return document.querySelector('input[name="map-style"]:checked')?.value || 'sat';
+        }
+        function is3DMode() {
+            return viewMode === '3d';
+        }
+        function viewPitch() {
+            return is3DMode() ? 65 : 0;
+        }
+
+        function applyMapStyle(mode) {
+            setVis('custom-map-layer', mode === 'map');
+            setVis('satellite-layer', mode === 'sat');
+            // 등고선 바탕과 경기 지도 바깥쪽은 등고선으로
+            setVis('terrain-hillshade', mode !== 'sat');
+            setVis('ardf-contour', mode !== 'sat');
+            setVis('ardf-contour-label', mode !== 'sat');
+        }
+
+        function applyView(instant) {
+            btnViewToggle.textContent = is3DMode() ? '3D' : '2D';
+            btnViewToggle.classList.toggle('is-3d', is3DMode());
+            if (is3DMode()) {
+                map.setTerrain({ source: 'mapbox-dem', exaggeration: currentExag });
+                if (map.getPitch() < 30) map.easeTo({ pitch: 65, duration: instant ? 0 : 700 });
+            } else {
                 map.setTerrain(null);
-                map.easeTo({ pitch: 0, duration: 600 });
-            } else if (mode === 'map2d') {
-                // 경기 2D: 베이스를 위성 2D로 제공하고 그 위에 종이 경기 지도 배치
-                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
-                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
-                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
-                map.setTerrain(null);
-                map.easeTo({ pitch: 0, duration: 700 });
-            } else if (mode === 'map3d') {
-                // 경기 3D: 등고선 3D 지형 위에 종이 경기 지도 랩핑
-                if (hasCustomMap) map.setLayoutProperty('custom-map-layer', 'visibility', 'visible');
-                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
-                if (hasHillshade) map.setLayoutProperty('terrain-hillshade', 'visibility', 'none');
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
-                map.easeTo({ pitch: 65, duration: 700 });
+                map.easeTo({ pitch: 0, duration: instant ? 0 : 600 });
             }
         }
 
         document.getElementById('style-switch-wrap').addEventListener('change', (e) => {
             if (e.target.name === 'map-style') applyMapStyle(e.target.value);
         });
+        btnViewToggle.addEventListener('click', () => {
+            if (isPickingMap) return;   // 정합 중에는 평면 유지
+            viewMode = is3DMode() ? '2d' : '3d';
+            applyView();
+        });
 
-        // 경기 지도 업로드
-        let rawCustomMapUrl = null;
-        let imgNaturalW = 0, imgNaturalH = 0;
+        // ==========================================
+        // 경기 지도 사진 처리
+        //   올리기 → 방향 고정·축소 → 4모서리 펴기 → 2점 정합
+        // ==========================================
+        // 기기가 지도에 올릴 수 있는 최대 이미지 크기 (보통 4096)
+        const MAX_SIDE = (() => {
+            let m = 4096;
+            try {
+                const c = document.createElement('canvas');
+                const gl = c.getContext('webgl');
+                if (gl) {
+                    m = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+                    const ext = gl.getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                }
+            } catch (e) { /* 기본값 사용 */ }
+            return m;
+        })();
+
+        let mapCanvas = null;       // 방향 고정·축소된 경기 지도 사진
+        let mapDataUrl = null;      // 지도 레이어에 올리는 이미지
         let baseCornerCoords = null;
         let curOpacity = 0.85;
         let curRotDeg = 0;
@@ -1000,500 +1212,397 @@
         const btnDelMap = document.getElementById('btn-del-map');
         const btnOpenGeo = document.getElementById('btn-open-geo-modal');
         const fineTuningBox = document.getElementById('map-fine-tuning');
-        const opacitySlider = document.getElementById('opacity-slider');
         const rotSlider = document.getElementById('rot-slider');
         const scaleSlider = document.getElementById('scale-slider');
-        const btn2D = document.getElementById('style-map2d');
-        const btn3D = document.getElementById('style-map3d');
+        const btnStyleMap = document.getElementById('style-map');
 
-        mapUploadInput.addEventListener('change', (e) => {
+        function loadImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이 사진 형식을 읽을 수 없습니다 (JPEG/PNG 권장)')); };
+                img.src = url;
+            });
+        }
+
+        // 최신 브라우저는 <img>를 그릴 때 휴대폰 사진의 회전 정보(EXIF)를 반영하므로,
+        // 캔버스에 한 번 그리면 방향이 실제 픽셀로 고정됩니다.
+        async function normalizeImage(file) {
+            const img = await loadImageFile(file);
+            const w = img.naturalWidth, h = img.naturalHeight;
+            const s = Math.min(1, MAX_SIDE / Math.max(w, h));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * s));
+            c.height = Math.max(1, Math.round(h * s));
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, c.width, c.height);
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            return c;
+        }
+
+        mapUploadInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                rawCustomMapUrl = event.target.result;
-                const tempImg = new Image();
-                tempImg.onload = () => {
-                    imgNaturalW = tempImg.naturalWidth;
-                    imgNaturalH = tempImg.naturalHeight;
-                    
-                    let bounds = map.getBounds();
-                    if (runners.length > 0) {
-                        bounds = new mapboxgl.LngLatBounds();
-                        runners.forEach(r => r.points.forEach(p => bounds.extend([p.lon, p.lat])));
-                    }
-                    const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
-                    baseCornerCoords = [
-                        [sw.lng, ne.lat],
-                        [ne.lng, ne.lat],
-                        [ne.lng, sw.lat],
-                        [sw.lng, sw.lat]
-                    ];
-                    updateCustomMapLayer();
-
-                    btnDelMap.style.display = 'flex';
-                    btnOpenGeo.style.display = 'block';
-                    fineTuningBox.style.display = 'flex';
-                    btn2D.disabled = false;
-                    btn3D.disabled = false;
-                    btn3D.checked = true;
-                    applyMapStyle('map3d');
-                };
-                tempImg.src = rawCustomMapUrl;
-            };
-            reader.readAsDataURL(file);
+            setBusy('사진을 불러오는 중...');
+            try {
+                mapCanvas = await normalizeImage(file);
+            } catch (err) {
+                setBusy(null);
+                flashBanner('⚠️ ' + err.message, 3000);
+                mapUploadInput.value = '';
+                return;
+            }
+            setBusy(null);
+            btnDelMap.style.display = 'flex';
+            setupMapImage();
+            openPicker();
         });
 
         btnDelMap.addEventListener('click', () => {
             if (map.getLayer('custom-map-layer')) map.removeLayer('custom-map-layer');
             if (map.getSource('custom-map-source')) map.removeSource('custom-map-source');
 
-            rawCustomMapUrl = null;
+            mapCanvas = null;
+            mapDataUrl = null;
             baseCornerCoords = null;
             mapUploadInput.value = '';
 
             btnDelMap.style.display = 'none';
             btnOpenGeo.style.display = 'none';
             fineTuningBox.style.display = 'none';
-            btn2D.disabled = true;
-            btn3D.disabled = true;
-
-            document.getElementById('style-topo').checked = true;
-            applyMapStyle('topo');
+            btnStyleMap.disabled = true;
+            if (currentStyleMode() === 'map' || btnStyleMap.checked) {
+                document.getElementById('style-sat').checked = true;
+            }
+            applyMapStyle(currentStyleMode());
         });
 
-        function updateCustomMapLayer() {
-            if (!rawCustomMapUrl || !baseCornerCoords) return;
+        btnOpenGeo.addEventListener('click', () => { if (mapCanvas) openPicker(); });
 
+        // 올린 지도를 일단 현재 화면(또는 GPX 범위)에 비율대로 올려 둠
+        function setupMapImage() {
+            mapDataUrl = mapCanvas.toDataURL('image/jpeg', 0.92);
+
+            let bounds;
+            const real = runners.filter(r => r.id !== GHOST_ID);
+            if (real.length > 0) {
+                bounds = new mapboxgl.LngLatBounds();
+                real.forEach(r => r.points.forEach(p => bounds.extend([p.lon, p.lat])));
+            } else {
+                bounds = map.getBounds();
+            }
+            const sw = lngLatToMercator(bounds.getWest(), bounds.getSouth());
+            const ne = lngLatToMercator(bounds.getEast(), bounds.getNorth());
+            const cx = (sw.x + ne.x) / 2, cy = (sw.y + ne.y) / 2;
+            let w = Math.abs(ne.x - sw.x), h = Math.abs(ne.y - sw.y);
+            const ar = mapCanvas.height / mapCanvas.width;
+            if (h < w * ar) w = h / ar; else h = w * ar;
+            baseCornerCoords = [
+                mercatorToLngLat(cx - w / 2, cy + h / 2),
+                mercatorToLngLat(cx + w / 2, cy + h / 2),
+                mercatorToLngLat(cx + w / 2, cy - h / 2),
+                mercatorToLngLat(cx - w / 2, cy - h / 2)
+            ];
+            resetTuningSliders();
+            updateCustomMapLayer(true);
+
+            btnOpenGeo.style.display = 'block';
+            fineTuningBox.style.display = 'flex';
+            btnStyleMap.disabled = false;
+            btnStyleMap.checked = true;
+            applyMapStyle('map');
+        }
+
+        function resetTuningSliders() {
+            curRotDeg = 0; rotSlider.value = 0; document.getElementById('rot-val').textContent = '0°';
+            curScaleRatio = 1.0; scaleSlider.value = 1.0; document.getElementById('scale-val').textContent = '100%';
+        }
+
+        function updateCustomMapLayer(recreate) {
+            if (!mapDataUrl || !baseCornerCoords) return;
             const corners = applyTuningTransforms(baseCornerCoords, curRotDeg, curScaleRatio);
+
+            if (recreate) {
+                if (map.getLayer('custom-map-layer')) map.removeLayer('custom-map-layer');
+                if (map.getSource('custom-map-source')) map.removeSource('custom-map-source');
+            }
 
             if (map.getSource('custom-map-source')) {
                 map.getSource('custom-map-source').setCoordinates(corners);
             } else {
-                map.addSource('custom-map-source', {
-                    'type': 'image',
-                    'url': rawCustomMapUrl,
-                    'coordinates': corners
-                });
-
-                // 가상 코스 유도선 아래에 지도 레이어를 배치하여 선이 가려지지 않도록 보장
+                map.addSource('custom-map-source', { type: 'image', url: mapDataUrl, coordinates: corners });
                 const beforeLayer = map.getLayer('virtual-course-layer') ? 'virtual-course-layer' : undefined;
-
                 map.addLayer({
-                    'id': 'custom-map-layer',
-                    'type': 'raster',
-                    'source': 'custom-map-source',
-                    'paint': { 'raster-opacity': curOpacity }
+                    id: 'custom-map-layer',
+                    type: 'raster',
+                    source: 'custom-map-source',
+                    paint: { 'raster-opacity': curOpacity, 'raster-fade-duration': 0 }
                 }, beforeLayer);
             }
         }
 
-        opacitySlider.addEventListener('input', (e) => {
+        document.getElementById('opacity-slider').addEventListener('input', (e) => {
             curOpacity = parseFloat(e.target.value);
             document.getElementById('opacity-val').textContent = Math.round(curOpacity * 100) + '%';
-            if (map.getLayer('custom-map-layer')) {
-                map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
-            }
+            if (map.getLayer('custom-map-layer')) map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
         });
         rotSlider.addEventListener('input', (e) => {
             curRotDeg = parseFloat(e.target.value);
             document.getElementById('rot-val').textContent = curRotDeg.toFixed(1) + '°';
-            updateCustomMapLayer();
+            updateCustomMapLayer(false);
         });
         scaleSlider.addEventListener('input', (e) => {
             curScaleRatio = parseFloat(e.target.value);
             document.getElementById('scale-val').textContent = Math.round(curScaleRatio * 100) + '%';
-            updateCustomMapLayer();
+            updateCustomMapLayer(false);
         });
 
         // ==========================================
-        // 2점 정밀 정합 엔진 (마우스 + 모바일 터치 제어 지원)
+        // 종이 지도 기준점 2개 찍기 모달
+        //   마우스·터치 모두 Pointer Events로 처리
         // ==========================================
         const geoModal = document.getElementById('geo-modal');
         const geoCanvasWrap = document.getElementById('geo-canvas-wrap');
         const geoStage = document.getElementById('geo-stage');
-        const geoCanvasImg = document.getElementById('geo-canvas-img');
         const geoStepTitle = document.getElementById('geo-step-title');
+        const pickOverlay = document.getElementById('pick-overlay');
+        const pickPolyline = document.getElementById('pick-polyline');
+        const btnPickUndo = document.getElementById('btn-pick-undo');
+        const btnPickNext = document.getElementById('btn-pick-next');
 
-        const btnGeoRedo1 = document.getElementById('btn-geo-redo1');
-        const btnGeoRedo2 = document.getElementById('btn-geo-redo2');
-        const btnGeoNext = document.getElementById('btn-geo-next');
-        const btnCloseGeo = document.getElementById('btn-close-geo');
+        const picker = { points: [], source: null };
+        const pinEls = [];
+        let curModalScale = 1.0, baseModalScale = 1.0, curModalX = 0, curModalY = 0;
 
-        const guideBanner = document.getElementById('guide-banner');
-        const guideText = document.getElementById('guide-text');
-        const btnBannerRedo = document.getElementById('btn-banner-redo');
-        const btnBannerBack = document.getElementById('btn-banner-back');
-        const btnBannerConfirm = document.getElementById('btn-banner-confirm');
-        const btnCancelGuide = document.getElementById('btn-cancel-guide');
+        let geoState = { p1Img: null, p2Img: null, p1Map: null, p2Map: null, mapStep: 3 };
 
-        let geoState = {
-            p1Img: null, p2Img: null,
-            p1Map: null, p2Map: null,
-            step: 1, mapStep: 3
-        };
-
-        let modalPin1El = null;
-        let modalPin2El = null;
-        let draggingDotNum = null;
-
-        let isPickingMap = false;
-        let mapPin1 = null;
-        let mapPin2 = null;
-
-        let curModalScale = 1.0;
-        let baseModalScale = 1.0;
-        let curModalX = 0, curModalY = 0;
-        let isDraggingModal = false;
-        let startClientX = 0, startClientY = 0;
-        let movedDist = 0;
-
-        function applyModalTransform(withTransition) {
-            geoStage.style.transition = withTransition ? 'transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none';
-            geoStage.style.transform = `translate(${curModalX}px, ${curModalY}px) scale(${curModalScale})`;
+        function openPicker(keepPoints) {
+            picker.source = mapCanvas;
+            if (!picker.source) return;
+            if (!keepPoints) picker.points = [];
+            geoStage.replaceChildren(picker.source);
+            geoModal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                resetModalToFullView();
+                updatePickerUI();
+            });
         }
 
-        function resetModalToFullView(withTransition) {
+        function closePicker() {
+            geoModal.style.display = 'none';
+        }
+
+        function applyModalTransform() {
+            geoStage.style.transform = `translate(${curModalX}px, ${curModalY}px) scale(${curModalScale})`;
+            renderPickOverlay();
+        }
+
+        function resetModalToFullView() {
             const wrapW = geoCanvasWrap.clientWidth || 800;
             const wrapH = geoCanvasWrap.clientHeight || 550;
-            const imgW = imgNaturalW || geoCanvasImg.naturalWidth || 800;
-            const imgH = imgNaturalH || geoCanvasImg.naturalHeight || 600;
-
+            const imgW = picker.source.width, imgH = picker.source.height;
             baseModalScale = Math.min((wrapW - 20) / imgW, (wrapH - 20) / imgH, 1.0);
             curModalScale = baseModalScale;
             curModalX = (wrapW - imgW * baseModalScale) / 2;
             curModalY = (wrapH - imgH * baseModalScale) / 2;
-
-            applyModalTransform(withTransition);
+            applyModalTransform();
         }
 
-        function updateModalStepUI() {
-            if (!geoState.p1Img) {
-                geoStepTitle.innerHTML = `<span class="step-badge badge-step1">1단계</span> <span>종이 지도를 확대하여 <b>[기준점 1 (출발 △)]</b>을 클릭하세요</span>`;
-                btnGeoRedo1.style.display = 'none';
-                btnGeoRedo2.style.display = 'none';
-                btnGeoNext.style.display = 'none';
-            } else if (geoState.p1Img && !geoState.p2Img) {
-                if (geoState.step === 1) {
-                    geoStepTitle.innerHTML = `<span class="step-badge badge-step1">1단계 완료</span> <span>1번 핀 위치 확인 (핀을 드래그해 미세조정 가능)</span>`;
-                    btnGeoRedo1.style.display = 'inline-block';
-                    btnGeoRedo1.textContent = '↺ 1번 다시';
-                    btnGeoRedo2.style.display = 'none';
-                    btnGeoNext.style.display = 'inline-block';
-                    btnGeoNext.textContent = '➔ 2단계 진행';
-                } else {
-                    geoStepTitle.innerHTML = `<span class="step-badge badge-step2">2단계</span> <span>종이 지도를 확대하여 <b>[기준점 2 (외곽 TX/랜드마크)]</b>를 클릭하세요</span>`;
-                    btnGeoRedo1.style.display = 'inline-block';
-                    btnGeoRedo1.textContent = '↺ 1번 다시';
-                    btnGeoRedo2.style.display = 'none';
-                    btnGeoNext.style.display = 'none';
-                }
-            } else if (geoState.p1Img && geoState.p2Img) {
-                geoStepTitle.innerHTML = `<span class="step-badge badge-step2">종이 지도 검토</span> <span>1·2번 위치가 맞습니까? (핀을 드래그해 미세조정)</span>`;
-                btnGeoRedo1.style.display = 'inline-block';
-                btnGeoRedo1.textContent = '↺ 1번 다시';
-                btnGeoRedo2.style.display = 'inline-block';
-                btnGeoRedo2.textContent = '↺ 2번 다시';
-                btnGeoNext.style.display = 'inline-block';
-                btnGeoNext.textContent = '✅ 종이 지도 확정 (실제 지도로) ➔';
-            }
+        function clampScale(s) {
+            return Math.min(Math.max(baseModalScale * 0.7, s), baseModalScale * 14.0);
         }
 
-        btnOpenGeo.addEventListener('click', () => {
-            if (!rawCustomMapUrl) return;
-            geoCanvasImg.src = rawCustomMapUrl;
-            
-            if (imgNaturalW > 0 && imgNaturalH > 0) {
-                geoCanvasImg.style.width = imgNaturalW + 'px';
-                geoCanvasImg.style.height = imgNaturalH + 'px';
-            }
-
-            if (modalPin1El) { modalPin1El.remove(); modalPin1El = null; }
-            if (modalPin2El) { modalPin2El.remove(); modalPin2El = null; }
-            geoState.p1Img = null;
-            geoState.p2Img = null;
-            geoState.step = 1;
-
-            updateModalStepUI();
-            geoModal.style.display = 'flex';
-
-            requestAnimationFrame(() => {
-                resetModalToFullView(false);
-            });
-        });
-
-        btnCloseGeo.addEventListener('click', () => {
-            geoModal.style.display = 'none';
-        });
-
-        // 데스크톱 휠 확대/축소
-        geoCanvasWrap.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const rect = geoCanvasWrap.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            const zoomFactor = Math.exp(-e.deltaY * 0.0012);
-            const newScale = Math.min(Math.max(baseModalScale * 0.7, curModalScale * zoomFactor), baseModalScale * 12.0);
-
-            curModalX = mouseX - (mouseX - curModalX) * (newScale / curModalScale);
-            curModalY = mouseY - (mouseY - curModalY) * (newScale / curModalScale);
+        function zoomAt(mx, my, newScale) {
+            curModalX = mx - (mx - curModalX) * (newScale / curModalScale);
+            curModalY = my - (my - curModalY) * (newScale / curModalScale);
             curModalScale = newScale;
-            applyModalTransform(false);
-        }, { passive: false });
-
-        // 데스크톱 마우스 드래그 & 클릭
-        geoCanvasWrap.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            isDraggingModal = true;
-            startClientX = e.clientX;
-            startClientY = e.clientY;
-            movedDist = 0;
-            geoStage.style.transition = 'none';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (draggingDotNum !== null) {
-                const rect = geoCanvasWrap.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-                const imgX = (clickX - curModalX) / curModalScale;
-                const imgY = (clickY - curModalY) / curModalScale;
-                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
-                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
-                const clampedX = Math.max(0, Math.min(imgW, imgX));
-                const clampedY = Math.max(0, Math.min(imgH, imgY));
-
-                const targetDot = (draggingDotNum === 1 ? modalPin1El : modalPin2El);
-                if (targetDot) {
-                    targetDot.style.left = clampedX + 'px';
-                    targetDot.style.top = clampedY + 'px';
-                }
-                if (draggingDotNum === 1) geoState.p1Img = { u: clampedX, v: clampedY };
-                else geoState.p2Img = { u: clampedX, v: clampedY };
-                return;
-            }
-
-            if (!isDraggingModal) return;
-            const dx = e.clientX - startClientX;
-            const dy = e.clientY - startClientY;
-            startClientX = e.clientX;
-            startClientY = e.clientY;
-            movedDist += Math.hypot(dx, dy);
-
-            curModalX += dx;
-            curModalY += dy;
-            applyModalTransform(false);
-        });
-
-        window.addEventListener('mouseup', (e) => {
-            if (draggingDotNum !== null) {
-                const targetDot = (draggingDotNum === 1 ? modalPin1El : modalPin2El);
-                if (targetDot) targetDot.style.cursor = 'grab';
-                draggingDotNum = null;
-                return;
-            }
-
-            if (!isDraggingModal) return;
-            isDraggingModal = false;
-
-            if (movedDist < 5) {
-                const rect = geoCanvasWrap.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-
-                const imgX = (clickX - curModalX) / curModalScale;
-                const imgY = (clickY - curModalY) / curModalScale;
-
-                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
-                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
-
-                if (imgX >= 0 && imgX <= imgW && imgY >= 0 && imgY <= imgH) {
-                    handlePaperMapClick(imgX, imgY);
-                }
-            }
-        });
-
-        // 모바일 터치 제어 (핀치 줌 & 터치 패닝 & 핀 이동)
-        let isPinching = false;
-        let pinchStartDist = 0;
-        let pinchStartScale = 1.0;
-
-        function getTouchDistance(t1, t2) {
-            return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            applyModalTransform();
         }
 
-        geoCanvasWrap.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                const targetDot = touch.target.closest('.geo-dot');
-                if (targetDot) {
-                    draggingDotNum = (targetDot === modalPin1El ? 1 : 2);
-                    return;
-                }
-                isDraggingModal = true;
-                startClientX = touch.clientX;
-                startClientY = touch.clientY;
-                movedDist = 0;
-                geoStage.style.transition = 'none';
-            } else if (e.touches.length === 2) {
-                isDraggingModal = false;
-                draggingDotNum = null;
-                isPinching = true;
-                pinchStartDist = getTouchDistance(e.touches[0], e.touches[1]);
-                pinchStartScale = curModalScale;
+        function toImg(x, y, clamp) {
+            const W = picker.source.width, H = picker.source.height;
+            let u = (x - curModalX) / curModalScale;
+            let v = (y - curModalY) / curModalScale;
+            if (clamp) {
+                u = Math.max(0, Math.min(W, u));
+                v = Math.max(0, Math.min(H, v));
+                return { u, v };
             }
-        }, { passive: false });
-
-        geoCanvasWrap.addEventListener('touchmove', (e) => {
-            if (e.cancelable) e.preventDefault();
-
-            if (isPinching && e.touches.length === 2) {
-                const newDist = getTouchDistance(e.touches[0], e.touches[1]);
-                if (pinchStartDist > 0) {
-                    const ratio = newDist / pinchStartDist;
-                    const newScale = Math.min(Math.max(baseModalScale * 0.7, pinchStartScale * ratio), baseModalScale * 12.0);
-                    
-                    const rect = geoCanvasWrap.getBoundingClientRect();
-                    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-
-                    curModalX = midX - (midX - curModalX) * (newScale / curModalScale);
-                    curModalY = midY - (midY - curModalY) * (newScale / curModalScale);
-                    curModalScale = newScale;
-                    applyModalTransform(false);
-                }
-                return;
-            }
-
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                if (draggingDotNum !== null) {
-                    const rect = geoCanvasWrap.getBoundingClientRect();
-                    const clickX = touch.clientX - rect.left;
-                    const clickY = touch.clientY - rect.top;
-                    const imgX = (clickX - curModalX) / curModalScale;
-                    const imgY = (clickY - curModalY) / curModalScale;
-                    const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
-                    const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
-                    const clampedX = Math.max(0, Math.min(imgW, imgX));
-                    const clampedY = Math.max(0, Math.min(imgH, imgY));
-
-                    const targetDot = (draggingDotNum === 1 ? modalPin1El : modalPin2El);
-                    if (targetDot) {
-                        targetDot.style.left = clampedX + 'px';
-                        targetDot.style.top = clampedY + 'px';
-                    }
-                    if (draggingDotNum === 1) geoState.p1Img = { u: clampedX, v: clampedY };
-                    else geoState.p2Img = { u: clampedX, v: clampedY };
-                    return;
-                }
-
-                if (isDraggingModal) {
-                    const dx = touch.clientX - startClientX;
-                    const dy = touch.clientY - startClientY;
-                    startClientX = touch.clientX;
-                    startClientY = touch.clientY;
-                    movedDist += Math.hypot(dx, dy);
-
-                    curModalX += dx;
-                    curModalY += dy;
-                    applyModalTransform(false);
-                }
-            }
-        }, { passive: false });
-
-        geoCanvasWrap.addEventListener('touchend', (e) => {
-            if (draggingDotNum !== null) {
-                draggingDotNum = null;
-                return;
-            }
-            if (isPinching && e.touches.length < 2) {
-                isPinching = false;
-                pinchStartDist = 0;
-            }
-            if (isDraggingModal) {
-                isDraggingModal = false;
-                if (movedDist < 8 && e.changedTouches.length > 0) {
-                    const touch = e.changedTouches[0];
-                    const rect = geoCanvasWrap.getBoundingClientRect();
-                    const clickX = touch.clientX - rect.left;
-                    const clickY = touch.clientY - rect.top;
-                    const imgX = (clickX - curModalX) / curModalScale;
-                    const imgY = (clickY - curModalY) / curModalScale;
-                    const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
-                    const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
-
-                    if (imgX >= 0 && imgX <= imgW && imgY >= 0 && imgY <= imgH) {
-                        handlePaperMapClick(imgX, imgY);
-                    }
-                }
-            }
-        });
-
-        function handlePaperMapClick(u, v) {
-            if (!geoState.p1Img) {
-                geoState.p1Img = { u, v };
-                modalPin1El = createModalPin(u, v, '#e74c3c', '1');
-                updateModalStepUI();
-            } else if (!geoState.p2Img && geoState.step === 2) {
-                geoState.p2Img = { u, v };
-                modalPin2El = createModalPin(u, v, '#3498db', '2');
-                resetModalToFullView(true);
-                updateModalStepUI();
-            }
+            if (u < 0 || v < 0 || u > W || v > H) return null;
+            return { u, v };
         }
 
-        function createModalPin(imgX, imgY, color, label) {
-            const dot = document.createElement('div');
-            dot.className = 'geo-dot';
-            dot.style.left = imgX + 'px';
-            dot.style.top = imgY + 'px';
-            dot.style.backgroundColor = color;
-            dot.textContent = label;
-            dot.title = `[${label}번 핀] 마우스나 손가락으로 끌어 미세 조정 가능`;
+        function renderPickOverlay() {
+            const pts = picker.points;
+            while (pinEls.length < pts.length) {
+                const el = document.createElement('div');
+                el.className = 'pick-pin';
+                el.dataset.idx = pinEls.length;
+                const lab = document.createElement('span');
+                lab.className = 'pick-pin-label';
+                el.appendChild(lab);
+                pickOverlay.appendChild(el);
+                pinEls.push(el);
+            }
+            while (pinEls.length > pts.length) pinEls.pop().remove();
 
-            dot.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                e.stopPropagation();
-                draggingDotNum = label === '1' ? 1 : 2;
-                dot.style.cursor = 'grabbing';
+            pinEls.forEach((el, i) => {
+                const p = pts[i];
+                el.style.left = (curModalX + p.u * curModalScale) + 'px';
+                el.style.top = (curModalY + p.v * curModalScale) + 'px';
+                const color = i === 0 ? '#e74c3c' : '#3498db';
+                el.style.setProperty('--pin', color);
+                el.firstChild.textContent = String(i + 1);
             });
 
-            geoStage.appendChild(dot);
-            return dot;
+            const toScreen = p => `${curModalX + p.u * curModalScale},${curModalY + p.v * curModalScale}`;
+            pickPolyline.setAttribute('points', pts.map(toScreen).join(' '));
         }
 
-        // 종이 지도 버튼 리스너
-        btnGeoRedo1.addEventListener('click', () => {
-            if (modalPin1El) { modalPin1El.remove(); modalPin1El = null; }
-            geoState.p1Img = null;
-            geoState.step = 1;
-            updateModalStepUI();
+        function updatePickerUI() {
+            const n = picker.points.length;
+            btnPickUndo.style.display = n > 0 ? 'inline-block' : 'none';
+
+                            if (n === 0) {
+                    geoStepTitle.innerHTML = `<span class="step-badge badge-step1">1단계</span><span><b>기준점 1</b>: 출발 △처럼 위치가 확실한 지점을 찍으세요</span>`;
+                    btnPickNext.style.display = 'none';
+                } else if (n === 1) {
+                    geoStepTitle.innerHTML = `<span class="step-badge badge-step2">2단계</span><span><b>기준점 2</b>: 1번에서 멀리 떨어진 지점(길 교차점 등)을 찍으세요</span>`;
+                    btnPickNext.style.display = 'none';
+                } else {
+                    geoStepTitle.innerHTML = `<span class="step-badge badge-step2">종이 지도 검토</span><span>두 점이 맞습니까? (핀을 끌어 미세조정)</span>`;
+                    btnPickNext.style.display = 'inline-block';
+                    btnPickNext.textContent = '실제 지도에서 찍기 ➔';
+                }
+        }
+
+        function addPickPoint(p) {
+            if (picker.points.length >= 2) return;
+            picker.points.push(p);
+            if (picker.points.length === 2) resetModalToFullView();
+            else renderPickOverlay();
+            updatePickerUI();
+        }
+
+        btnPickUndo.addEventListener('click', () => {
+            picker.points.pop();
+            renderPickOverlay();
+            updatePickerUI();
         });
 
-        btnGeoRedo2.addEventListener('click', () => {
-            if (modalPin2El) { modalPin2El.remove(); modalPin2El = null; }
-            geoState.p2Img = null;
-            geoState.step = 2;
-            updateModalStepUI();
-        });
-
-        btnGeoNext.addEventListener('click', () => {
-            if (geoState.step === 1 && geoState.p1Img && !geoState.p2Img) {
-                geoState.step = 2;
-                resetModalToFullView(true);
-                updateModalStepUI();
-            } else if (geoState.p1Img && geoState.p2Img) {
-                geoModal.style.display = 'none';
+        btnPickNext.addEventListener('click', () => {
+            if (picker.points.length === 2) {
+                geoState.p1Img = { ...picker.points[0] };
+                geoState.p2Img = { ...picker.points[1] };
+                closePicker();
                 startMapGeoreferencing();
             }
         });
 
+        document.getElementById('btn-close-geo').addEventListener('click', closePicker);
+
+        // 휠 확대/축소
+        geoCanvasWrap.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = geoCanvasWrap.getBoundingClientRect();
+            zoomAt(e.clientX - rect.left, e.clientY - rect.top, clampScale(curModalScale * Math.exp(-e.deltaY * 0.0012)));
+        }, { passive: false });
+
+        // 포인터(마우스·손가락) 처리: 1개 = 이동/핀 끌기/점 찍기, 2개 = 핀치 확대
+        const ptrs = new Map();
+        let dragPin = null, panning = false, moved = 0, wasMulti = false, lastPt = null, pinchInfo = null;
+
+        geoCanvasWrap.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            try { geoCanvasWrap.setPointerCapture(e.pointerId); } catch (err) { /* 무시 */ }
+            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (ptrs.size === 1) {
+                wasMulti = false;
+                moved = 0;
+                lastPt = { x: e.clientX, y: e.clientY };
+                const pin = e.target.closest('.pick-pin');
+                if (pin) {
+                    dragPin = parseInt(pin.dataset.idx, 10);
+                    panning = false;
+                } else {
+                    dragPin = null;
+                    panning = true;
+                }
+            } else if (ptrs.size === 2) {
+                wasMulti = true;
+                dragPin = null;
+                panning = false;
+                const [a, b] = [...ptrs.values()];
+                pinchInfo = { dist: Math.hypot(b.x - a.x, b.y - a.y) || 1, scale: curModalScale };
+            }
+        });
+
+        geoCanvasWrap.addEventListener('pointermove', (e) => {
+            if (!ptrs.has(e.pointerId)) return;
+            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            const rect = geoCanvasWrap.getBoundingClientRect();
+
+            if (ptrs.size >= 2 && pinchInfo) {
+                const [a, b] = [...ptrs.values()];
+                const nd = Math.hypot(b.x - a.x, b.y - a.y);
+                const ns = clampScale(pinchInfo.scale * nd / pinchInfo.dist);
+                zoomAt((a.x + b.x) / 2 - rect.left, (a.y + b.y) / 2 - rect.top, ns);
+                return;
+            }
+            if (dragPin !== null) {
+                picker.points[dragPin] = toImg(e.clientX - rect.left, e.clientY - rect.top, true);
+                renderPickOverlay();
+                return;
+            }
+            if (panning && lastPt) {
+                const dx = e.clientX - lastPt.x, dy = e.clientY - lastPt.y;
+                lastPt = { x: e.clientX, y: e.clientY };
+                moved += Math.hypot(dx, dy);
+                curModalX += dx;
+                curModalY += dy;
+                applyModalTransform();
+            }
+        });
+
+        function endPointer(e) {
+            if (!ptrs.has(e.pointerId)) return;
+            ptrs.delete(e.pointerId);
+
+            if (ptrs.size === 1) {
+                // 핀치 후 손가락 하나가 남으면 이어서 이동
+                pinchInfo = null;
+                const [p] = [...ptrs.values()];
+                lastPt = { x: p.x, y: p.y };
+                panning = true;
+                return;
+            }
+            if (ptrs.size === 0) {
+                if (dragPin !== null) {
+                    dragPin = null;
+                    updatePickerUI();
+                } else if (panning && !wasMulti && moved < 6 && e.type === 'pointerup') {
+                    const rect = geoCanvasWrap.getBoundingClientRect();
+                    const p = toImg(e.clientX - rect.left, e.clientY - rect.top, false);
+                    if (p) addPickPoint(p);
+                }
+                panning = false;
+                pinchInfo = null;
+            }
+        }
+        geoCanvasWrap.addEventListener('pointerup', endPointer);
+        geoCanvasWrap.addEventListener('pointercancel', endPointer);
+
         // ==========================================
-        // 실제 지도(3단계, 4단계) 확인/다시/복귀 엔진
+        // 실제 지도에서 기준점 찍기 (3·4단계)
         // ==========================================
+        let isPickingMap = false;
+        let mapPin1 = null;
+        let mapPin2 = null;
+
         function updateMapStepUI() {
             guideBanner.classList.remove('banner-pulse-anim');
             void guideBanner.offsetWidth;
@@ -1501,48 +1610,43 @@
 
             if (geoState.mapStep === 3) {
                 if (!geoState.p1Map) {
-                    guideText.innerHTML = `<span class="step-badge badge-step3">3단계</span> <span>실제 지도에서 <b>[기준점 1]</b> 위치를 확대하여 클릭하세요</span>`;
+                    guideText.innerHTML = `<span class="step-badge badge-step3">3단계</span> <span>실제 지도에서 <b>[기준점 1]</b> 위치를 확대하여 찍으세요</span>`;
                     btnBannerRedo.style.display = 'none';
-                    btnBannerBack.style.display = 'inline-block';
-                    btnBannerBack.textContent = '◀ 종이 지도 수정';
                     btnBannerConfirm.style.display = 'none';
                 } else {
                     guideText.innerHTML = `<span class="step-badge badge-step3">3단계 확인</span> <span>1번 위치 확인 (마커를 끌어 미세조정 가능)</span>`;
                     btnBannerRedo.style.display = 'inline-block';
                     btnBannerRedo.textContent = '↺ 1번 다시';
-                    btnBannerBack.style.display = 'inline-block';
-                    btnBannerBack.textContent = '◀ 종이 지도 수정';
                     btnBannerConfirm.style.display = 'inline-block';
                     btnBannerConfirm.textContent = '➔ 4단계 진행';
                 }
+                btnBannerBack.style.display = 'inline-block';
+                btnBannerBack.textContent = '◀ 종이 지도 수정';
             } else if (geoState.mapStep === 4) {
                 if (!geoState.p2Map) {
-                    guideText.innerHTML = `<span class="step-badge badge-step4">4단계</span> <span>실제 지도에서 <b>[기준점 2]</b> 위치를 확대하여 클릭하세요</span>`;
+                    guideText.innerHTML = `<span class="step-badge badge-step4">4단계</span> <span>실제 지도에서 <b>[기준점 2]</b> 위치를 확대하여 찍으세요</span>`;
                     btnBannerRedo.style.display = 'none';
-                    btnBannerBack.style.display = 'inline-block';
-                    btnBannerBack.textContent = '◀ 3단계(1번) 수정';
                     btnBannerConfirm.style.display = 'none';
                 } else {
-                    guideText.innerHTML = `<span class="step-badge badge-step4">최종 검토</span> <span>두 기준점이 모두 지정되었습니다. (마커 드래그로 미세조정)</span>`;
+                    guideText.innerHTML = `<span class="step-badge badge-step4">최종 검토</span> <span>두 기준점이 지정되었습니다 (마커를 끌어 미세조정)</span>`;
                     btnBannerRedo.style.display = 'inline-block';
                     btnBannerRedo.textContent = '↺ 2번 다시';
-                    btnBannerBack.style.display = 'inline-block';
-                    btnBannerBack.textContent = '◀ 3단계(1번) 수정';
                     btnBannerConfirm.style.display = 'inline-block';
-                    btnBannerConfirm.textContent = '🎯 정합 실행 및 완료';
+                    btnBannerConfirm.textContent = '🎯 정합 실행';
                 }
+                btnBannerBack.style.display = 'inline-block';
+                btnBannerBack.textContent = '◀ 3단계(1번) 수정';
             }
         }
 
         function startMapGeoreferencing() {
+            clearTimeout(bannerTimer);
             isPickingMap = true;
             geoState.mapStep = 3;
 
-            if (map.getSource('mapbox-dem')) map.setTerrain(null);
+            map.setTerrain(null);
             map.easeTo({ pitch: 0, duration: 500 });
-            if (map.getLayer('custom-map-layer')) {
-                map.setPaintProperty('custom-map-layer', 'raster-opacity', 0);
-            }
+            if (map.getLayer('custom-map-layer')) map.setPaintProperty('custom-map-layer', 'raster-opacity', 0);
 
             map.getCanvas().style.cursor = 'crosshair';
             guideBanner.style.display = 'flex';
@@ -1550,6 +1654,8 @@
         }
 
         function cancelGuide() {
+            clearTimeout(bannerTimer);
+            const wasPicking = isPickingMap;
             isPickingMap = false;
             activeTxKey = null;
             guideBanner.style.display = 'none';
@@ -1561,16 +1667,13 @@
             geoState.p1Map = null;
             geoState.p2Map = null;
 
-            const curStyle = document.querySelector('input[name="map-style"]:checked')?.value;
-            if (curStyle === 'topo' || curStyle === 'map3d') {
-                if (map.getSource('mapbox-dem') && currentExag > 0) {
-                    map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+            if (wasPicking) {
+                if (is3DMode()) {
+                    map.setTerrain({ source: 'mapbox-dem', exaggeration: currentExag });
+                    map.easeTo({ pitch: 65, duration: 500 });
                 }
-                map.easeTo({ pitch: 65, duration: 500 });
             }
-            if (map.getLayer('custom-map-layer')) {
-                map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
-            }
+            if (map.getLayer('custom-map-layer')) map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
         }
         btnCancelGuide.addEventListener('click', cancelGuide);
 
@@ -1578,25 +1681,21 @@
             if (geoState.mapStep === 3) {
                 if (mapPin1) { mapPin1.remove(); mapPin1 = null; }
                 geoState.p1Map = null;
-                updateMapStepUI();
             } else if (geoState.mapStep === 4) {
                 if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
                 geoState.p2Map = null;
-                updateMapStepUI();
             }
+            updateMapStepUI();
         });
 
         btnBannerBack.addEventListener('click', () => {
             if (geoState.mapStep === 3) {
-                geoModal.style.display = 'flex';
-                updateModalStepUI();
+                openPicker(true);
             } else if (geoState.mapStep === 4) {
                 if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
                 geoState.p2Map = null;
                 geoState.mapStep = 3;
-                if (geoState.p1Map) {
-                    map.easeTo({ center: geoState.p1Map, zoom: 14.5, duration: 800 });
-                }
+                if (geoState.p1Map) map.easeTo({ center: geoState.p1Map, zoom: 14.5, duration: 800 });
                 updateMapStepUI();
             }
         });
@@ -1607,131 +1706,103 @@
                 geoState.mapStep = 4;
                 updateMapStepUI();
             } else if (geoState.mapStep === 4 && geoState.p1Map && geoState.p2Map) {
-                const imgW = imgNaturalW || geoCanvasImg.naturalWidth;
-                const imgH = imgNaturalH || geoCanvasImg.naturalHeight;
-
                 baseCornerCoords = compute2PointAffine(
                     geoState.p1Img, geoState.p2Img,
                     geoState.p1Map, geoState.p2Map,
-                    imgW, imgH
+                    mapCanvas.width, mapCanvas.height
                 );
+                resetTuningSliders();
+                updateCustomMapLayer(false);
+                if (map.getLayer('custom-map-layer')) map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
 
-                curRotDeg = 0; rotSlider.value = 0; document.getElementById('rot-val').textContent = '0°';
-                curScaleRatio = 1.0; scaleSlider.value = 1.0; document.getElementById('scale-val').textContent = '100%';
-                updateCustomMapLayer();
-
-                if (map.getLayer('custom-map-layer')) {
-                    map.setPaintProperty('custom-map-layer', 'raster-opacity', curOpacity);
-                }
-                if (map.getSource('mapbox-dem')) {
-                    map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': currentExag });
+                if (is3DMode()) {
+                    map.setTerrain({ source: 'mapbox-dem', exaggeration: currentExag });
                 }
 
-                const fitBounds = new mapboxgl.LngLatBounds();
-                baseCornerCoords.forEach(c => fitBounds.extend(c));
-                map.fitBounds(fitBounds, { padding: 80, pitch: 45, duration: 1400 });
+                const fitB = new mapboxgl.LngLatBounds();
+                baseCornerCoords.forEach(c => fitB.extend(c));
+                map.fitBounds(fitB, { padding: 80, pitch: is3DMode() ? 45 : 0, duration: 1400 });
 
-                guideText.innerHTML = '✅ <b>종이 지도 2점 정밀 정합이 완벽하게 완료되었습니다!</b>';
+                guideText.innerHTML = '✅ <b>종이 지도 정합이 완료되었습니다</b>';
                 btnBannerRedo.style.display = 'none';
                 btnBannerBack.style.display = 'none';
                 btnBannerConfirm.style.display = 'none';
-
-                setTimeout(() => {
-                    cancelGuide();
-                }, 2500);
+                isPickingMap = false;
+                map.getCanvas().style.cursor = '';
+                if (mapPin1) { mapPin1.remove(); mapPin1 = null; }
+                if (mapPin2) { mapPin2.remove(); mapPin2 = null; }
+                geoState.p1Map = null;
+                geoState.p2Map = null;
+                bannerTimer = setTimeout(() => { guideBanner.style.display = 'none'; }, 2500);
             }
         });
 
-        // 실제 지도 클릭/터치 핸들러
+        function makeMapPin(lngLat, color, label, onMove) {
+            const el = document.createElement('div');
+            el.className = 'map-geo-pin';
+            el.style.backgroundColor = color;
+            el.textContent = label;
+            el.title = `${label}번 핀 (끌어서 미세 조정 가능)`;
+            const m = new mapboxgl.Marker({ element: el, draggable: true }).setLngLat(lngLat).addTo(map);
+            m.on('dragend', () => {
+                const ll = m.getLngLat();
+                onMove([ll.lng, ll.lat]);
+            });
+            return m;
+        }
+
         map.on('click', (e) => {
             if (isPickingMap) {
                 if (geoState.mapStep === 3 && !geoState.p1Map) {
                     geoState.p1Map = [e.lngLat.lng, e.lngLat.lat];
-
-                    const el1 = document.createElement('div');
-                    el1.className = 'map-geo-pin';
-                    el1.style.backgroundColor = '#e74c3c';
-                    el1.textContent = '1';
-                    el1.title = '1번 핀 (끌어서 미세 조정 가능)';
-
-                    mapPin1 = new mapboxgl.Marker({ element: el1, draggable: true })
-                        .setLngLat(geoState.p1Map)
-                        .addTo(map);
-
-                    mapPin1.on('dragend', () => {
-                        const ll = mapPin1.getLngLat();
-                        geoState.p1Map = [ll.lng, ll.lat];
-                    });
-
+                    mapPin1 = makeMapPin(geoState.p1Map, '#e74c3c', '1', ll => { geoState.p1Map = ll; });
                     updateMapStepUI();
                 } else if (geoState.mapStep === 4 && !geoState.p2Map) {
                     geoState.p2Map = [e.lngLat.lng, e.lngLat.lat];
-
-                    const el2 = document.createElement('div');
-                    el2.className = 'map-geo-pin';
-                    el2.style.backgroundColor = '#3498db';
-                    el2.textContent = '2';
-                    el2.title = '2번 핀 (끌어서 미세 조정 가능)';
-
-                    mapPin2 = new mapboxgl.Marker({ element: el2, draggable: true })
-                        .setLngLat(geoState.p2Map)
-                        .addTo(map);
-
-                    mapPin2.on('dragend', () => {
-                        const ll = mapPin2.getLngLat();
-                        geoState.p2Map = [ll.lng, ll.lat];
-                    });
-
+                    mapPin2 = makeMapPin(geoState.p2Map, '#3498db', '2', ll => { geoState.p2Map = ll; });
                     updateMapStepUI();
                 }
                 return;
             }
 
             if (activeTxKey) {
-                setTxPosition(activeTxKey, e.lngLat.lng, e.lngLat.lat);
+                const key = activeTxKey;
                 cancelGuide();
+                setTxPosition(key, e.lngLat.lng, e.lngLat.lat);
             }
         });
 
-        // 2점 정합 아핀 변환 수학식
+        // 2점 정합 (이동·회전·축척) 계산 — 웹 메르카토르 평면 기준
         const R_EARTH = 6378137;
         function lngLatToMercator(lng, lat) {
-            const x = R_EARTH * (lng * Math.PI / 180);
-            const y = R_EARTH * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
-            return { x, y };
+            return {
+                x: R_EARTH * (lng * Math.PI / 180),
+                y: R_EARTH * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2))
+            };
         }
         function mercatorToLngLat(x, y) {
-            const lng = (x / R_EARTH) * (180 / Math.PI);
-            const lat = (2 * Math.atan(Math.exp(y / R_EARTH)) - Math.PI / 2) * (180 / Math.PI);
-            return [lng, lat];
+            return [
+                (x / R_EARTH) * (180 / Math.PI),
+                (2 * Math.atan(Math.exp(y / R_EARTH)) - Math.PI / 2) * (180 / Math.PI)
+            ];
         }
 
         function compute2PointAffine(p1I, p2I, p1M, p2M, W, H) {
             const m1 = lngLatToMercator(p1M[0], p1M[1]);
             const m2 = lngLatToMercator(p2M[0], p2M[1]);
+            const dxM = m2.x - m1.x, dyM = m2.y - m1.y;
+            const duP = p2I.u - p1I.u, dvP = p1I.v - p2I.v;   // 이미지 v축은 아래 방향이므로 뒤집음
 
-            const dxM = m2.x - m1.x;
-            const dyM = m2.y - m1.y;
-            const distM = Math.hypot(dxM, dyM);
-            const angleM = Math.atan2(dyM, dxM);
+            const scale = Math.hypot(dxM, dyM) / Math.max(1e-9, Math.hypot(duP, dvP));
+            const rot = Math.atan2(dyM, dxM) - Math.atan2(dvP, duP);
 
-            const duP = p2I.u - p1I.u;
-            const dvP = p1I.v - p2I.v;
-            const distP = Math.hypot(duP, dvP);
-            const angleP = Math.atan2(dvP, duP);
-
-            const scale = distM / distP;
-            const rot = angleM - angleP;
-
-            const imgCorners = [{u:0, v:0}, {u:W, v:0}, {u:W, v:H}, {u:0, v:H}];
+            const imgCorners = [{ u: 0, v: 0 }, { u: W, v: 0 }, { u: W, v: H }, { u: 0, v: H }];
             return imgCorners.map(c => {
                 const du = c.u - p1I.u;
                 const dv = p1I.v - c.v;
                 const rx = du * Math.cos(rot) - dv * Math.sin(rot);
                 const ry = du * Math.sin(rot) + dv * Math.cos(rot);
-                const curX = m1.x + rx * scale;
-                const curY = m1.y + ry * scale;
-                return mercatorToLngLat(curX, curY);
+                return mercatorToLngLat(m1.x + rx * scale, m1.y + ry * scale);
             });
         }
 
@@ -1741,17 +1812,19 @@
             const cx = (mercs[0].x + mercs[2].x) / 2;
             const cy = (mercs[0].y + mercs[2].y) / 2;
             const rad = dDeg * Math.PI / 180;
-
             return mercs.map(m => {
-                let dx = (m.x - cx) * dScale;
-                let dy = (m.y - cy) * dScale;
-                const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
-                const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
-                return mercatorToLngLat(cx + rx, cy + ry);
+                const dx = (m.x - cx) * dScale;
+                const dy = (m.y - cy) * dScale;
+                return mercatorToLngLat(
+                    cx + dx * Math.cos(rad) - dy * Math.sin(rad),
+                    cy + dx * Math.sin(rad) + dy * Math.cos(rad)
+                );
             });
         }
 
+        // ==========================================
         // 종목별 송신기 구성
+        // ==========================================
         const TX_CONFIGS = {
             classic: [
                 { key: 'S', label: '△ 스타트' },
@@ -1776,7 +1849,7 @@
                 { key: '1', label: 'TX 1' }, { key: '2', label: 'TX 2' },
                 { key: '3', label: 'TX 3' }, { key: '4', label: 'TX 4' },
                 { key: '5', label: 'TX 5' },
-                { key: 'Sp', label: '관람점(S)' },
+                { key: 'Sp', label: '관람점' },
                 { key: '1F', label: 'TX 1F' }, { key: '2F', label: 'TX 2F' },
                 { key: '3F', label: 'TX 3F' }, { key: '4F', label: 'TX 4F' },
                 { key: '5F', label: 'TX 5F' },
@@ -1785,36 +1858,50 @@
             ]
         };
 
+        function txLabel(key) {
+            if (key === 'S') return '출발';
+            if (key === 'F') return '피니시';
+            if (key === 'B') return '비컨';
+            if (key === 'Sp') return '관람점';
+            return 'TX ' + key;
+        }
+        function txShort(key) {
+            return key === 'Sp' ? '관람' : key;
+        }
+
         const txGrid = document.getElementById('tx-dynamic-grid');
         const raceTypeSelect = document.getElementById('race-type');
+        const txListBox = document.getElementById('tx-list-box');
         let activeTxKey = null;
         let txMarkers = {};
-        const txListBox = document.getElementById('tx-list-box');
+
+        // 스타트·피니시 도착 판정 반경 (m)
+        function getTxRadius() {
+            return 30;
+        }
 
         function renderTxGrid(type) {
             txGrid.innerHTML = '';
             const list = TX_CONFIGS[type] || TX_CONFIGS.classic;
             list.forEach(item => {
                 const btn = document.createElement('button');
-                btn.className = 'btn-tx-pick';
-                btn.setAttribute('data-tx', item.key);
+                btn.className = 'btn-tx-pick' + (txMarkers[item.key] ? ' placed' : '');
+                btn.dataset.tx = item.key;
                 btn.textContent = item.label;
                 btn.addEventListener('click', () => {
                     if (activeTxKey === item.key) {
                         cancelGuide();
                         return;
                     }
+                    if (isPickingMap) return;
+                    clearTimeout(bannerTimer);
                     activeTxKey = item.key;
                     document.querySelectorAll('.btn-tx-pick').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-
-                    guideText.textContent = `[${item.label}] 위치를 지도에서 탭하세요 (2D 모드)`;
-                    btnBannerRedo.style.display = 'none';
-                    btnBannerBack.style.display = 'none';
-                    btnBannerConfirm.style.display = 'none';
-                    guideBanner.style.display = 'flex';
+                    flashBanner(`[${item.label}] 위치를 지도에서 탭하세요`);
                     map.getCanvas().style.cursor = 'crosshair';
                     if (map.getPitch() !== 0) map.easeTo({ pitch: 0, duration: 400 });
+                    if (window.innerWidth <= 1024) toggleSidebar(true);
                 });
                 txGrid.appendChild(btn);
             });
@@ -1823,7 +1910,7 @@
         renderTxGrid('classic');
         raceTypeSelect.addEventListener('change', (e) => {
             renderTxGrid(e.target.value);
-            if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
+            if (modeGhost.checked) generateVirtualCourse();
         });
 
         document.getElementById('btn-tx-manual').addEventListener('click', () => {
@@ -1832,9 +1919,9 @@
             const parts = inputVal.split(',').map(s => parseFloat(s.trim()));
             if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
                 const targetKey = activeTxKey || '1';
+                cancelGuide();
                 setTxPosition(targetKey, parts[1], parts[0]);
                 document.getElementById('tx-manual-input').value = '';
-                cancelGuide();
             } else {
                 alert('위도, 경도 형식(예: 35.8512, 127.1234)으로 입력해 주세요.');
             }
@@ -1846,30 +1933,30 @@
             const el = document.createElement('div');
             if (key === 'S') {
                 el.className = 'iof-start-marker';
-                el.title = '출발점 (Start)';
+            } else if (key === 'F') {
+                el.className = 'iof-finish-marker';
             } else {
                 el.className = 'iof-tx-marker';
-                el.textContent = key;
-                el.title = `송신기 TX ${key}`;
+                el.textContent = txShort(key);
             }
+            el.title = txLabel(key);
 
-            const marker = new mapboxgl.Marker({ element: el })
-                .setLngLat([lng, lat])
-                .addTo(map);
-
+            const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
             txMarkers[key] = { key, lng, lat, marker };
             renderTxList();
-
-            if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
+            renderTxGrid(raceTypeSelect.value);
+            recomputeAll();
+            if (modeGhost.checked) generateVirtualCourse();
         }
 
         function removeTx(key) {
-            if (txMarkers[key]) {
-                txMarkers[key].marker.remove();
-                delete txMarkers[key];
-                renderTxList();
-                if (document.getElementById('mode-ghost').checked) generateVirtualCourse();
-            }
+            if (!txMarkers[key]) return;
+            txMarkers[key].marker.remove();
+            delete txMarkers[key];
+            renderTxList();
+            renderTxGrid(raceTypeSelect.value);
+            recomputeAll();
+            if (modeGhost.checked) generateVirtualCourse();
         }
 
         function renderTxList() {
@@ -1877,20 +1964,31 @@
             Object.values(txMarkers).forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'tx-list-item';
-                row.innerHTML = `
-                    <span><b>TX ${item.key}</b> : ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</span>
-                    <button class="btn-del-item" style="width:18px;height:18px;font-size:10px;" onclick="removeTx('${item.key}')">✕</button>
-                `;
+                const span = document.createElement('span');
+                const b = document.createElement('b');
+                b.textContent = txLabel(item.key);
+                span.append(b, ` : ${item.lat.toFixed(5)}, ${item.lng.toFixed(5)}`);
+                const del = document.createElement('button');
+                del.className = 'btn-del-item';
+                del.style.width = '18px';
+                del.style.height = '18px';
+                del.style.fontSize = '10px';
+                del.textContent = '✕';
+                del.addEventListener('click', () => removeTx(item.key));
+                row.append(span, del);
                 txListBox.appendChild(row);
             });
         }
-        window.removeTx = removeTx;
 
-        // 선수 GPX 추가 및 시뮬레이션
+        // ==========================================
+        // 선수 GPX
+        // ==========================================
         let runners = [];
         let runnerIdSequence = 0;
+        let selectedIds = new Set();
         let globalStartTime = 0;
         let globalEndTime = 0;
+        let raceZeroTime = 0;
         let currentSimTime = 0;
         let isPlaying = false;
         let animId = null;
@@ -1902,37 +2000,45 @@
         const btnPlay = document.getElementById('btn-play');
         const timeline = document.getElementById('timeline');
         const speedSelect = document.getElementById('speed-select');
+        const raceClock = document.getElementById('race-clock');
+        const startModeSelect = document.getElementById('start-mode');
+        const TAIL_MS = 30000;          // 이동 꼬리 길이: 30초
+        const START_GAP_MS = 60000;     // 1분 간격 출발
+        let hoverRunnerId = null;
+        const modeGpx = document.getElementById('mode-gpx');
+        const modeGhost = document.getElementById('mode-ghost');
+
+        document.getElementById('btn-add-gpx').addEventListener('click', () => gpxInput.click());
 
         gpxInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if (!files.length) return;
-
+            const isFirst = runners.filter(r => r.id !== GHOST_ID).length === 0;
             const bounds = new mapboxgl.LngLatBounds();
-            const isFirst = runners.length === 0;
+            let added = 0;
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+            for (const file of files) {
                 const text = await file.text();
                 const runnerName = file.name.replace(/\.[^/.]+$/, '');
                 const runner = parseGPX(text, runnerName, runnerIdSequence++);
-                if (runner && runner.points.length > 0) {
+                if (runner) {
                     runners.push(runner);
                     runner.points.forEach(p => bounds.extend([p.lon, p.lat]));
+                    added++;
+                } else {
+                    flashBanner(`⚠️ ${file.name}: 경로 기록(trkpt)을 찾을 수 없습니다`, 3000);
                 }
             }
-
             gpxInput.value = '';
-            if (runners.length === 0) return;
+            if (!added) return;
 
-            recalcTimeline();
-            renderRunnerList();
-            renderScoreCards();
-
+            refreshTrackData();
+            recomputeAll();
             playerBar.style.display = 'flex';
 
             if (isFirst) {
                 currentSimTime = globalStartTime;
-                map.fitBounds(bounds, { padding: 80, pitch: 65, duration: 1500 });
+                map.fitBounds(bounds, { padding: 80, pitch: viewPitch(), duration: 1500 });
             }
             updateSimulation(currentSimTime);
         });
@@ -1942,107 +2048,275 @@
             const trkpts = xml.querySelectorAll('trkpt');
             if (trkpts.length === 0) return null;
 
-            const color = PALETTE[id % PALETTE.length];
-            const points = [];
-            let totalDist = 0, totalEle = 0;
-            let prevLat = null, prevLon = null, prevEle = null;
-
+            const now = Date.now();
+            let points = [];
             trkpts.forEach((pt, idx) => {
                 const lat = parseFloat(pt.getAttribute('lat'));
                 const lon = parseFloat(pt.getAttribute('lon'));
+                if (isNaN(lat) || isNaN(lon)) return;
                 const eleNode = pt.querySelector('ele');
                 const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
                 const timeNode = pt.querySelector('time');
-                const time = timeNode ? new Date(timeNode.textContent).getTime() : (Date.now() + idx * 1000);
-
-                if (prevLat !== null && prevLon !== null) {
-                    totalDist += calculateDistance(prevLat, prevLon, lat, lon);
-                    if (prevEle !== null && ele > prevEle) totalEle += (ele - prevEle);
-                }
-
-                points.push({ lat, lon, ele, time });
-                prevLat = lat; prevLon = lon; prevEle = ele;
+                let time = timeNode ? new Date(timeNode.textContent).getTime() : NaN;
+                if (isNaN(time)) time = now + idx * 1000;
+                points.push({ lat, lon, ele: isNaN(ele) ? 0 : ele, time });
             });
+            points.sort((a, b) => a.time - b.time);
+            // 같은 시각이 중복된 기록 제거
+            points = points.filter((p, i) => i === 0 || p.time > points[i - 1].time);
+            if (points.length < 2) return null;
 
-            return createRunnerObject(id, defaultName, color, points, totalDist, totalEle);
+            return createRunnerObject(id, defaultName, PALETTE[id % PALETTE.length], points);
         }
 
-        function createRunnerObject(id, name, color, points, totalDist, totalEle) {
-            const el = document.createElement('div');
-            el.className = 'runner-marker-container';
-            el.innerHTML = `
-                <div class="runner-pulse" style="border-color: ${color}; background: ${color}22;"></div>
-                <div class="runner-badge">${name}</div>
-                <div class="runner-arrow-wrap">
-                    <div class="runner-arrow-inner">
-                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; display: block;">
-                            <polygon points="12,1 23,23 12,17 1,23" fill="${color}" stroke="none"/>
-                        </svg>
-                    </div>
-                </div>
-            `;
+        function distM(lat1, lon1, lat2, lon2) {
+            return calculateDistance(lat1, lon1, lat2, lon2) * 1000;
+        }
 
-            const marker = new mapboxgl.Marker({ element: el })
-                .setLngLat([points[0].lon, points[0].lat])
-                .addTo(map);
+        // 선수 전체 경로 (선택한 선수만 표시)
+        function buildSegments(r) {
+            return [{
+                type: 'Feature',
+                properties: { rid: r.id, color: r.color },
+                geometry: { type: 'LineString', coordinates: r.points.map(p => [p.lon, p.lat]) }
+            }];
+        }
 
-            return {
-                id: id,
-                name: name,
-                color: color,
-                points: points,
-                distance: totalDist,
-                elevationGain: totalEle,
-                startTime: points[0].time,
-                endTime: points[points.length - 1].time,
-                marker: marker,
-                element: el,
-                arrowInner: el.querySelector('.runner-arrow-inner'),
-                currentPos: null
+        function createRunnerObject(id, name, color, points) {
+            const cum = new Float64Array(points.length);
+            for (let i = 1; i < points.length; i++) {
+                cum[i] = cum[i - 1] + distM(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon);
+            }
+
+            const r = {
+                id, name, color, points, cum,
+                segments: null,
+                startIdx: 0, startTime: points[0].time,
+                finishIdx: -1, finishTime: null,
+                visits: [],
+                distance: 0, elevationGain: 0,
+                shift: 0, lastBearing: 0, currentPos: null
             };
+            r.segments = buildSegments(r);
+            return r;
         }
 
-        window.deleteRunner = function(id) {
+        function deleteRunner(id) {
             const idx = runners.findIndex(r => r.id === id);
             if (idx === -1) return;
-
-            runners[idx].marker.remove();
             runners.splice(idx, 1);
+            selectedIds.delete(id);
 
             if (runners.length === 0) {
                 playerBar.style.display = 'none';
                 pauseTrack();
-            } else {
-                recalcTimeline();
-                updateSimulation(currentSimTime);
             }
+            refreshTrackData();
+            applyTrackFilter();
+            recomputeAll();
+        }
 
-            renderRunnerList();
-            renderScoreCards();
-        };
+        // ---------- 출발·TX 통과·피니시 판정 ----------
+        function detectStart(r) {
+            const p = r.points, n = p.length;
+            const S = txMarkers['S'];
+            if (S) {
+                // 스타트 반경 안에 처음 들어온 뒤, 처음 벗어나는 순간
+                const R = Math.max(30, getTxRadius());
+                let entered = -1;
+                for (let i = 0; i < n; i++) {
+                    if (distM(p[i].lat, p[i].lon, S.lat, S.lng) <= R) { entered = i; break; }
+                }
+                if (entered >= 0) {
+                    for (let j = entered; j < n; j++) {
+                        if (distM(p[j].lat, p[j].lon, S.lat, S.lng) > R) return Math.max(0, j - 1);
+                    }
+                }
+            }
+            // 스타트 미지정: 30초 동안 40m 이상 움직이기 시작한 시점
+            let j = 0;
+            for (let i = 0; i < n; i++) {
+                if (j < i) j = i;
+                while (j < n - 1 && p[j].time < p[i].time + 30000) j++;
+                if (p[j].time - p[i].time >= 20000 && distM(p[i].lat, p[i].lon, p[j].lat, p[j].lon) >= 40) return i;
+            }
+            return 0;
+        }
+
+        function detectVisits(r) {
+            const p = r.points, n = p.length, R = getTxRadius(), s = r.startIdx;
+            const visits = [];
+            Object.keys(txMarkers).forEach(key => {
+                if (key === 'S' || key === 'F') return;
+                const m = txMarkers[key];
+                for (let i = s; i < n; i++) {
+                    if (distM(p[i].lat, p[i].lon, m.lat, m.lng) <= R) {
+                        visits.push({ key, idx: i, time: p[i].time });
+                        break;
+                    }
+                }
+            });
+            visits.sort((a, b) => a.time - b.time);
+
+            let finishIdx = -1;
+            const F = txMarkers['F'];
+            if (F) {
+                let k = visits.length ? visits[visits.length - 1].idx : s;
+                // 피니시가 스타트 근처에 있어도 오판하지 않도록, 일단 피니시에서 멀어진 뒤부터 찾음
+                while (k < n && distM(p[k].lat, p[k].lon, F.lat, F.lng) <= R * 2) k++;
+                for (let i = k; i < n; i++) {
+                    if (distM(p[i].lat, p[i].lon, F.lat, F.lng) <= R) { finishIdx = i; break; }
+                }
+            }
+            r.visits = visits;
+            r.finishIdx = finishIdx;
+            r.finishTime = finishIdx >= 0 ? p[finishIdx].time : null;
+        }
+
+        function computeStats(r) {
+            const p = r.points;
+            const s = r.startIdx;
+            const e = r.finishIdx >= 0 ? r.finishIdx : p.length - 1;
+            r.distance = (r.cum[e] - r.cum[s]) / 1000;
+            // 2m 미만 고도 흔들림은 무시하고 누적 상승고도 계산
+            let gain = 0, ref = p[s].ele;
+            for (let i = s + 1; i <= e; i++) {
+                const d = p[i].ele - ref;
+                if (d > 2) { gain += d; ref = p[i].ele; }
+                else if (d < 0) ref = p[i].ele;
+            }
+            r.elevationGain = gain;
+        }
+
+        function computeShifts() {
+            const mode = startModeSelect.value;
+            const gap = START_GAP_MS;
+            const ordered = [...runners].sort((a, b) => a.startTime - b.startTime);
+            const base = ordered.length ? ordered[0].startTime : 0;
+            ordered.forEach((r, k) => {
+                if (mode === 'real') r.shift = 0;
+                else if (mode === 'same') r.shift = r.startTime - base;
+                else r.shift = r.startTime - (base + k * gap);
+            });
+        }
 
         function recalcTimeline() {
             if (runners.length === 0) return;
-            globalStartTime = Math.min(...runners.map(r => r.startTime));
-            globalEndTime = Math.max(...runners.map(r => r.endTime));
-            if (currentSimTime < globalStartTime || currentSimTime > globalEndTime) {
-                currentSimTime = globalStartTime;
-            }
+            raceZeroTime = Math.min(...runners.map(r => r.startTime - r.shift));
+            globalStartTime = raceZeroTime - 10000;
+            globalEndTime = Math.max(...runners.map(r => {
+                const last = r.points[r.points.length - 1].time;
+                const end = r.finishTime ? Math.min(last, r.finishTime + 60000) : last;
+                return end - r.shift;
+            }));
+            if (globalEndTime <= globalStartTime) globalEndTime = globalStartTime + 1000;
+            if (currentSimTime < globalStartTime || currentSimTime > globalEndTime) currentSimTime = globalStartTime;
+        }
+
+        function recomputeAll() {
+            runners.forEach(r => {
+                r.startIdx = detectStart(r);
+                r.startTime = r.points[r.startIdx].time;
+                detectVisits(r);
+                computeStats(r);
+            });
+            computeShifts();
+            recalcTimeline();
+            renderRunnerList();
+            renderScoreCards();
+            if (runners.length) updateSimulation(currentSimTime);
+            else if (map.getSource('runners-source')) map.getSource('runners-source').setData(EMPTY_FC);
+        }
+
+        // ---------- 선택·표시 설정 ----------
+        function trackFilter() {
+            return ['in', ['get', 'rid'], ['literal', [...selectedIds]]];
+        }
+        function refreshTrackData() {
+            const src = map.getSource('tracks-source');
+            if (src) src.setData({ type: 'FeatureCollection', features: runners.flatMap(r => r.segments) });
+        }
+        function applyTrackFilter() {
+            if (map.getLayer('tracks-layer')) map.setFilter('tracks-layer', trackFilter());
+            if (map.getLayer('tracks-casing')) map.setFilter('tracks-casing', trackFilter());
+        }
+
+        function toggleSelect(id, forceOn) {
+            if (forceOn === true) selectedIds.add(id);
+            else if (selectedIds.has(id)) selectedIds.delete(id);
+            else selectedIds.add(id);
+            applyTrackFilter();
+            renderRunnerList();
+            renderScoreCards();
+            if (runners.length) updateSimulation(currentSimTime);
+        }
+
+        document.getElementById('btn-select-all').addEventListener('click', () => {
+            const allOn = runners.length > 0 && runners.every(r => selectedIds.has(r.id));
+            selectedIds = allOn ? new Set() : new Set(runners.map(r => r.id));
+            toggleSelectRefresh();
+        });
+        function toggleSelectRefresh() {
+            applyTrackFilter();
+            renderRunnerList();
+            renderScoreCards();
+            if (runners.length) updateSimulation(currentSimTime);
+        }
+
+        startModeSelect.addEventListener('change', () => {
+            currentSimTime = -Infinity;
+            recomputeAll();
+        });
+
+        // ---------- 목록·카드 ----------
+        function fmtDur(ms) {
+            const neg = ms < 0;
+            let s = Math.round(Math.abs(ms) / 1000);
+            const h = Math.floor(s / 3600); s -= h * 3600;
+            const m = Math.floor(s / 60); s -= m * 60;
+            const body = h > 0
+                ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+                : `${m}:${String(s).padStart(2, '0')}`;
+            return (neg ? '-' : '') + body;
+        }
+
+        function runnerStatsText(r) {
+            let t = `${r.distance.toFixed(1)}km · ▲${Math.round(r.elevationGain)}m`;
+            if (r.finishTime) t += ` · ${fmtDur(r.finishTime - r.startTime)}`;
+            return t;
         }
 
         function renderRunnerList() {
             runnerListBox.innerHTML = '';
             runners.forEach((r) => {
                 const item = document.createElement('div');
-                item.className = 'runner-item';
+                item.className = 'runner-item' + (selectedIds.has(r.id) ? ' selected' : '');
                 item.style.borderLeftColor = r.color;
-                item.innerHTML = `
-                    <div class="runner-info-wrap">
-                        <span class="runner-name-tag" style="color:${r.color};">${r.name}</span>
-                        <span class="runner-stats-tag">${r.distance.toFixed(1)}km / ▲${Math.round(r.elevationGain)}m</span>
-                    </div>
-                    <button class="btn-del-item" onclick="deleteRunner(${r.id})" title="선수 삭제">✕</button>
-                `;
+                item.title = '눌러서 전체 경로 보기/숨기기';
+
+                const info = document.createElement('div');
+                info.className = 'runner-info-wrap';
+                const nm = document.createElement('span');
+                nm.className = 'runner-name-tag';
+                nm.style.color = r.color;
+                nm.textContent = (selectedIds.has(r.id) ? '● ' : '') + r.name;
+                const st = document.createElement('span');
+                st.className = 'runner-stats-tag';
+                st.textContent = runnerStatsText(r);
+                info.append(nm, st);
+
+                const del = document.createElement('button');
+                del.className = 'btn-del-item';
+                del.title = '선수 삭제';
+                del.textContent = '✕';
+                del.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (r.id === GHOST_ID) { modeGpx.checked = true; exitGhostMode(); }
+                    else deleteRunner(r.id);
+                });
+
+                item.addEventListener('click', () => toggleSelect(r.id));
+                item.append(info, del);
                 runnerListBox.appendChild(item);
             });
         }
@@ -2051,97 +2325,133 @@
             topScoreboardBar.innerHTML = '';
             runners.forEach((r) => {
                 const card = document.createElement('div');
-                card.className = 'runner-score-card';
-                card.innerHTML = `
-                    <div class="card-color-dot" style="background:${r.color}; box-shadow: 0 0 6px ${r.color};"></div>
-                    <div class="card-callsign">${r.name}</div>
-                    <div class="card-stats">${r.distance.toFixed(1)}k · ▲${Math.round(r.elevationGain)}m</div>
-                `;
-                card.addEventListener('mouseenter', () => r.element.classList.add('active-hover'));
-                card.addEventListener('mouseleave', () => r.element.classList.remove('active-hover'));
+                card.className = 'runner-score-card' + (selectedIds.has(r.id) ? ' selected' : '');
+                const dot = document.createElement('div');
+                dot.className = 'card-color-dot';
+                dot.style.background = r.color;
+                dot.style.boxShadow = `0 0 6px ${r.color}`;
+                const cs = document.createElement('div');
+                cs.className = 'card-callsign';
+                cs.textContent = r.name;
+                const stats = document.createElement('div');
+                stats.className = 'card-stats';
+                stats.textContent = runnerStatsText(r);
+                card.append(dot, cs, stats);
+
+                card.addEventListener('mouseenter', () => { hoverRunnerId = r.id; updateSimulation(currentSimTime); });
+                card.addEventListener('mouseleave', () => { hoverRunnerId = null; updateSimulation(currentSimTime); });
                 card.addEventListener('click', () => {
-                    if (r.currentPos) {
-                        map.easeTo({ center: [r.currentPos.lon, r.currentPos.lat], zoom: 15, duration: 900 });
-                    }
+                    if (!selectedIds.has(r.id)) toggleSelect(r.id, true);
+                    if (r.currentPos) map.easeTo({ center: [r.currentPos.lon, r.currentPos.lat], zoom: 15.5, duration: 900 });
                 });
                 topScoreboardBar.appendChild(card);
             });
         }
 
+        // ---------- 재생 ----------
+        function idxAtOrBefore(p, t) {
+            if (t < p[0].time) return -1;
+            let lo = 0, hi = p.length - 1;
+            while (lo < hi) {
+                const mid = (lo + hi + 1) >> 1;
+                if (p[mid].time <= t) lo = mid; else hi = mid - 1;
+            }
+            return lo;
+        }
+
+        function interp(p, t) {
+            const n = p.length;
+            if (t <= p[0].time) return { lat: p[0].lat, lon: p[0].lon };
+            if (t >= p[n - 1].time) return { lat: p[n - 1].lat, lon: p[n - 1].lon };
+            const i = idxAtOrBefore(p, t);
+            const a = p[i], b = p[i + 1];
+            const span = b.time - a.time;
+            const k = span > 0 ? (t - a.time) / span : 0;
+            return { lat: a.lat + (b.lat - a.lat) * k, lon: a.lon + (b.lon - a.lon) * k };
+        }
+
+        function tailCoords(p, t0, t1, cur) {
+            const start = interp(p, t0);
+            const out = [[start.lon, start.lat]];
+            let i = idxAtOrBefore(p, t0) + 1;
+            while (i < p.length && p[i].time < t1) {
+                out.push([p[i].lon, p[i].lat]);
+                i++;
+            }
+            out.push([cur.lon, cur.lat]);
+            return out;
+        }
+
         function updateSimulation(simTime) {
+            const tails = [];
+            const heads = [];
+
             runners.forEach(r => {
-                if (simTime < r.startTime) {
-                    r.element.style.opacity = '0';
-                    r.element.style.pointerEvents = 'none';
+                const p = r.points;
+                const rawT = simTime + r.shift;
+                if (rawT < p[0].time) {
+                    r.currentPos = null;
                     return;
                 }
-                r.element.style.opacity = '1';
-                r.element.style.pointerEvents = 'auto';
+                const finished = r.finishTime ? rawT >= r.finishTime : rawT >= p[p.length - 1].time;
 
-                const pos = getInterpolatedPoint(r.points, simTime);
+                const pos = interp(p, rawT);
+                // 5초 전 위치와 비교해 진행 방향 계산 (멈춰 있으면 이전 방향 유지)
+                const back = interp(p, rawT - 5000);
+                if (distM(back.lat, back.lon, pos.lat, pos.lon) > 2) {
+                    r.lastBearing = getBearing(back.lat, back.lon, pos.lat, pos.lon);
+                }
                 r.currentPos = pos;
-                r.marker.setLngLat([pos.lon, pos.lat]);
-                r.arrowInner.style.transform = `rotate(${pos.bearing}deg)`;
+
+                const coords = tailCoords(p, rawT - TAIL_MS, rawT, pos);
+                if (coords.length >= 2) {
+                    tails.push({
+                        type: 'Feature',
+                        properties: { color: r.color },
+                        geometry: { type: 'LineString', coordinates: coords }
+                    });
+                }
+                heads.push({
+                    type: 'Feature',
+                    properties: {
+                        rid: r.id, name: r.name, color: r.color,
+                        bearing: r.lastBearing, finished,
+                        big: selectedIds.has(r.id) || hoverRunnerId === r.id
+                    },
+                    geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] }
+                });
             });
+
+            // 꼬리와 화살표를 같은 데이터로 한 번에 넘김 → 같은 화면에서 함께 그려짐
+            const src = map.getSource('runners-source');
+            if (src) src.setData({ type: 'FeatureCollection', features: tails.concat(heads) });
 
             const pct = ((simTime - globalStartTime) / Math.max(1, globalEndTime - globalStartTime)) * 1000;
             timeline.value = Math.min(1000, Math.max(0, pct));
+            raceClock.textContent = startModeSelect.value === 'real'
+                ? new Date(simTime).toLocaleTimeString('ko-KR', { hour12: false })
+                : fmtDur(simTime - raceZeroTime);
         }
 
-        function getInterpolatedPoint(pts, time) {
-            if (time <= pts[0].time) return { lon: pts[0].lon, lat: pts[0].lat, bearing: 0 };
-            if (time >= pts[pts.length - 1].time) {
-                const last = pts[pts.length - 2] || pts[pts.length - 1];
-                const endP = pts[pts.length - 1];
-                return { lon: endP.lon, lat: endP.lat, bearing: getBearing(last.lat, last.lon, endP.lat, endP.lon) };
-            }
-
-            let low = 0, high = pts.length - 1;
-            while (low <= high) {
-                const mid = (low + high) >> 1;
-                if (pts[mid].time < time) low = mid + 1;
-                else high = mid - 1;
-            }
-            const i1 = Math.max(0, low - 1);
-            const i2 = Math.min(pts.length - 1, low);
-
-            const p1 = pts[i1], p2 = pts[i2];
-            const span = p2.time - p1.time;
-            const ratio = span > 0 ? (time - p1.time) / span : 0;
-
-            return {
-                lon: p1.lon + (p2.lon - p1.lon) * ratio,
-                lat: p1.lat + (p2.lat - p1.lat) * ratio,
-                bearing: getBearing(p1.lat, p1.lon, p2.lat, p2.lon)
-            };
-        }
-
-        function playLoop(lastTimestamp) {
-            function loop(now) {
+        function playTrack() {
+            isPlaying = true;
+            btnPlay.textContent = '⏸';
+            let last = performance.now();
+            const loop = (now) => {
                 if (!isPlaying) return;
-                const dt = (now - lastTimestamp) / 1000;
-                lastTimestamp = now;
-
-                const speed = parseFloat(speedSelect.value);
-                currentSimTime += dt * 1000 * speed;
-
+                const dt = now - last;
+                last = now;
+                currentSimTime += dt * parseFloat(speedSelect.value);
                 if (currentSimTime >= globalEndTime) {
                     currentSimTime = globalEndTime;
                     updateSimulation(currentSimTime);
                     pauseTrack();
                     return;
                 }
-
                 updateSimulation(currentSimTime);
                 animId = requestAnimationFrame(loop);
-            }
+            };
             animId = requestAnimationFrame(loop);
-        }
-
-        function playTrack() {
-            isPlaying = true;
-            btnPlay.textContent = '⏸';
-            playLoop(performance.now());
         }
 
         function pauseTrack() {
@@ -2150,14 +2460,15 @@
             if (animId) cancelAnimationFrame(animId);
         }
 
-        btnPlay.addEventListener('click', () => {
+        function togglePlay() {
             if (runners.length === 0) return;
             if (isPlaying) pauseTrack();
             else {
                 if (currentSimTime >= globalEndTime) currentSimTime = globalStartTime;
                 playTrack();
             }
-        });
+        }
+        btnPlay.addEventListener('click', togglePlay);
 
         timeline.addEventListener('input', (e) => {
             if (runners.length === 0) return;
@@ -2166,39 +2477,37 @@
             updateSimulation(currentSimTime);
         });
 
-        // AI 가상 코스 엔진
-        const modeGpx = document.getElementById('mode-gpx');
-        const modeGhost = document.getElementById('mode-ghost');
-
-        modeGhost.addEventListener('click', () => {
-            const ok = generateVirtualCourse();
+        // ==========================================
+        // 가상 코스 (최단 순서 추천 + 도보 경로)
+        // ==========================================
+        modeGhost.addEventListener('click', async () => {
+            const ok = await generateVirtualCourse();
             if (!ok) modeGpx.checked = true;
         });
 
-        modeGpx.addEventListener('click', () => {
-            removeGhostRunner();
-            if (map.getSource('virtual-course-source')) {
-                map.getSource('virtual-course-source').setData({ 'type': 'FeatureCollection', 'features': [] });
-            }
-            cancelGuide();
+        modeGpx.addEventListener('click', exitGhostMode);
 
-            if (runners.length > 0) {
+        function exitGhostMode() {
+            removeGhostRunner();
+            if (map.getSource('virtual-course-source')) map.getSource('virtual-course-source').setData(EMPTY_FC);
+            cancelGuide();
+            const real = runners.filter(r => r.id !== GHOST_ID);
+            if (real.length > 0) {
                 const b = new mapboxgl.LngLatBounds();
-                runners.forEach(r => r.points.forEach(p => b.extend([p.lon, p.lat])));
-                map.fitBounds(b, { padding: 80, pitch: 65, duration: 1500 });
+                real.forEach(r => r.points.forEach(p => b.extend([p.lon, p.lat])));
+                map.fitBounds(b, { padding: 80, pitch: viewPitch(), duration: 1500 });
             }
-        });
+        }
 
         function removeGhostRunner() {
-            const gIdx = runners.findIndex(r => r.id === 9999);
-            if (gIdx !== -1) {
-                runners[gIdx].marker.remove();
-                runners.splice(gIdx, 1);
-                recalcTimeline();
-                renderRunnerList();
-                renderScoreCards();
-                if (runners.length === 0) playerBar.style.display = 'none';
-            }
+            const gIdx = runners.findIndex(r => r.id === GHOST_ID);
+            if (gIdx === -1) return;
+            runners.splice(gIdx, 1);
+            selectedIds.delete(GHOST_ID);
+            refreshTrackData();
+            applyTrackFilter();
+            recomputeAll();
+            if (runners.length === 0) playerBar.style.display = 'none';
         }
 
         function findOptimalRoute(startPt, targets, endPt) {
@@ -2206,20 +2515,14 @@
             if (targets.length <= 7) {
                 let bestOrder = null;
                 let minCost = Infinity;
-
-                function permute(arr, memo = []) {
+                function permute(arr, memo) {
                     if (arr.length === 0) {
                         let cost = calculateDistance(startPt.lat, startPt.lng, memo[0].lat, memo[0].lng);
                         for (let i = 0; i < memo.length - 1; i++) {
-                            cost += calculateDistance(memo[i].lat, memo[i].lng, memo[i+1].lat, memo[i+1].lng);
+                            cost += calculateDistance(memo[i].lat, memo[i].lng, memo[i + 1].lat, memo[i + 1].lng);
                         }
-                        if (endPt) {
-                            cost += calculateDistance(memo[memo.length - 1].lat, memo[memo.length - 1].lng, endPt.lat, endPt.lng);
-                        }
-                        if (cost < minCost) {
-                            minCost = cost;
-                            bestOrder = memo;
-                        }
+                        if (endPt) cost += calculateDistance(memo[memo.length - 1].lat, memo[memo.length - 1].lng, endPt.lat, endPt.lng);
+                        if (cost < minCost) { minCost = cost; bestOrder = memo; }
                         return;
                     }
                     for (let i = 0; i < arr.length; i++) {
@@ -2228,36 +2531,32 @@
                         permute(curr, memo.concat(next));
                     }
                 }
-
-                permute(targets);
+                permute(targets, []);
                 return bestOrder;
-            } else {
-                let order = sortNearest(startPt, targets);
-                let improved = true;
-                let iter = 0;
-                while (improved && iter < 50) {
-                    improved = false;
-                    iter++;
-                    for (let i = 0; i < order.length - 1; i++) {
-                        for (let k = i + 1; k < order.length; k++) {
-                            const prevPt = (i === 0) ? startPt : order[i - 1];
-                            const nextPt = (k === order.length - 1) ? (endPt || order[k]) : order[k + 1];
-                            
-                            const curDist = calculateDistance(prevPt.lat, prevPt.lng, order[i].lat, order[i].lng) +
-                                            calculateDistance(order[k].lat, order[k].lng, nextPt.lat, nextPt.lng);
-                            const newDist = calculateDistance(prevPt.lat, prevPt.lng, order[k].lat, order[k].lng) +
-                                            calculateDistance(order[i].lat, order[i].lng, nextPt.lat, nextPt.lng);
-                            
-                            if (newDist < curDist - 0.001) {
-                                const reversed = order.slice(i, k + 1).reverse();
-                                order.splice(i, k - i + 1, ...reversed);
-                                improved = true;
-                            }
+            }
+            // 8개 이상: 가까운 순서로 시작해 2-opt로 개선
+            const order = sortNearest(startPt, targets);
+            let improved = true, iter = 0;
+            while (improved && iter < 50) {
+                improved = false;
+                iter++;
+                for (let i = 0; i < order.length - 1; i++) {
+                    for (let k = i + 1; k < order.length; k++) {
+                        const prevPt = (i === 0) ? startPt : order[i - 1];
+                        const nextPt = (k === order.length - 1) ? (endPt || order[k]) : order[k + 1];
+                        const curDist = calculateDistance(prevPt.lat, prevPt.lng, order[i].lat, order[i].lng) +
+                                        calculateDistance(order[k].lat, order[k].lng, nextPt.lat, nextPt.lng);
+                        const newDist = calculateDistance(prevPt.lat, prevPt.lng, order[k].lat, order[k].lng) +
+                                        calculateDistance(order[i].lat, order[i].lng, nextPt.lat, nextPt.lng);
+                        if (newDist < curDist - 0.001) {
+                            const reversed = order.slice(i, k + 1).reverse();
+                            order.splice(i, k - i + 1, ...reversed);
+                            improved = true;
                         }
                     }
                 }
-                return order;
             }
+            return order;
         }
 
         async function generateVirtualCourse() {
@@ -2266,18 +2565,12 @@
             const targetKeys = Object.keys(txMarkers).filter(k => k !== 'S' && k !== 'F' && k !== 'B');
 
             if (!hasStart || !hasFinish || targetKeys.length === 0) {
-                guideText.textContent = '⚠️ 출발(S), 송신기, 피니시(F)를 먼저 지정해 주세요!';
-                btnBannerRedo.style.display = 'none';
-                btnBannerBack.style.display = 'none';
-                btnBannerConfirm.style.display = 'none';
-                guideBanner.style.display = 'flex';
-                setTimeout(() => { if (!activeTxKey) guideBanner.style.display = 'none'; }, 2500);
+                flashBanner('⚠️ 출발(S), 송신기, 피니시(F)를 먼저 지정해 주세요!', 2500);
                 return false;
             }
 
             const raceType = raceTypeSelect.value;
-            let orderedWaypoints = [];
-            orderedWaypoints.push(txMarkers['S']);
+            const orderedWaypoints = [txMarkers['S']];
             const endTarget = txMarkers['B'] || txMarkers['F'];
 
             if (raceType === 'sprint') {
@@ -2289,22 +2582,16 @@
                 const lastPt = orderedWaypoints[orderedWaypoints.length - 1];
                 orderedWaypoints.push(...findOptimalRoute(lastPt, loop2.map(k => txMarkers[k]), endTarget));
             } else {
-                const targets = targetKeys.map(k => txMarkers[k]);
-                orderedWaypoints.push(...findOptimalRoute(txMarkers['S'], targets, endTarget));
+                orderedWaypoints.push(...findOptimalRoute(txMarkers['S'], targetKeys.map(k => txMarkers[k]), endTarget));
             }
-
             if (txMarkers['B']) orderedWaypoints.push(txMarkers['B']);
             orderedWaypoints.push(txMarkers['F']);
 
             const bounds = new mapboxgl.LngLatBounds();
             orderedWaypoints.forEach(w => bounds.extend([w.lng, w.lat]));
-            map.fitBounds(bounds, { padding: 80, pitch: 65, duration: 1500 });
+            map.fitBounds(bounds, { padding: 80, pitch: viewPitch(), duration: 1500 });
 
-            guideText.textContent = '⏳ 건지산 실제 오솔길 경로를 탐색하고 있습니다...';
-            btnBannerRedo.style.display = 'none';
-            btnBannerBack.style.display = 'none';
-            btnBannerConfirm.style.display = 'none';
-            guideBanner.style.display = 'flex';
+            flashBanner('⏳ 실제 산길·오솔길 경로를 탐색하고 있습니다...');
 
             let routeCoords = [];
             try {
@@ -2312,77 +2599,68 @@
                 const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${coordStr}?geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
                 const res = await fetch(url);
                 const data = await res.json();
-                if (data.routes && data.routes.length > 0) {
-                    routeCoords = data.routes[0].geometry.coordinates;
-                }
+                if (data.routes && data.routes.length > 0) routeCoords = data.routes[0].geometry.coordinates;
             } catch (err) {
-                console.warn('Mapbox Directions fallback:', err);
+                console.warn('Mapbox Directions 실패, 직선으로 대체:', err);
             }
 
             if (routeCoords.length === 0) {
                 for (let i = 0; i < orderedWaypoints.length - 1; i++) {
-                    const pA = orderedWaypoints[i], pB = orderedWaypoints[i+1];
-                    const steps = 15;
-                    for (let s = 0; s <= steps; s++) {
-                        const r = s / steps;
+                    const pA = orderedWaypoints[i], pB = orderedWaypoints[i + 1];
+                    for (let s = 0; s <= 15; s++) {
+                        const r = s / 15;
                         routeCoords.push([pA.lng + (pB.lng - pA.lng) * r, pA.lat + (pB.lat - pA.lat) * r]);
                     }
                 }
             }
 
-            const ghostPoints = [];
-            let totalDist = 0, totalEle = 0;
-            let simTimeCursor = Date.now();
+            const real = runners.filter(r => r.id !== GHOST_ID);
+            let simTimeCursor = real.length ? Math.min(...real.map(r => r.startTime)) : Date.now();
             const PACE_SEC_PER_KM = 360;
+            const ghostPoints = [];
+            let lastEle = 0;
 
             for (let i = 0; i < routeCoords.length; i++) {
-                const cLng = routeCoords[i][0];
-                const cLat = routeCoords[i][1];
-
-                let ele = 80;
+                const [cLng, cLat] = routeCoords[i];
+                // 과장 배율이 빠진 실제 고도 (지형이 꺼져 있거나 타일이 없으면 직전 값 사용)
+                let ele = lastEle;
                 if (map.queryTerrainElevation) {
-                    const terr = map.queryTerrainElevation([cLng, cLat]);
-                    if (terr !== null) ele = terr;
+                    const terr = map.queryTerrainElevation([cLng, cLat], { exaggerated: false });
+                    if (terr !== null && terr !== undefined) ele = terr;
                 }
+                lastEle = ele;
 
                 if (ghostPoints.length > 0) {
                     const lastP = ghostPoints[ghostPoints.length - 1];
                     const d = calculateDistance(lastP.lat, lastP.lon, cLat, cLng);
-                    totalDist += d;
-                    if (ele > lastP.ele) totalEle += (ele - lastP.ele);
+                    if (d < 0.0005) continue;  // 0.5m 미만 중복점 제외
                     simTimeCursor += d * PACE_SEC_PER_KM * 1000;
                 }
-
-                ghostPoints.push({ lat: cLat, lon: cLng, ele: ele, time: simTimeCursor });
+                ghostPoints.push({ lat: cLat, lon: cLng, ele, time: Math.round(simTimeCursor) });
+            }
+            if (ghostPoints.length < 2) {
+                flashBanner('⚠️ 경로를 만들 수 없습니다', 2500);
+                return false;
             }
 
             if (map.getSource('virtual-course-source')) {
                 map.getSource('virtual-course-source').setData({
-                    'type': 'FeatureCollection',
-                    'features': [{
-                        'type': 'Feature',
-                        'properties': {},
-                        'geometry': { 'type': 'LineString', 'coordinates': routeCoords }
-                    }]
+                    type: 'FeatureCollection',
+                    features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeCoords } }]
                 });
             }
 
-            removeGhostRunner();
-            const ghostRunner = createRunnerObject(9999, 'AI Ghost', '#00cec9', ghostPoints, totalDist, totalEle);
-            runners.push(ghostRunner);
-
-            recalcTimeline();
-            renderRunnerList();
-            renderScoreCards();
+            const gIdx = runners.findIndex(r => r.id === GHOST_ID);
+            if (gIdx !== -1) runners.splice(gIdx, 1);
+            runners.push(createRunnerObject(GHOST_ID, 'AI Ghost', '#00cec9', ghostPoints));
+            refreshTrackData();
+            recomputeAll();
             playerBar.style.display = 'flex';
 
-            const seqStr = orderedWaypoints.map(w => w.key).join(' ➔ ');
+            const ghost = runners.find(r => r.id === GHOST_ID);
+            const seqStr = orderedWaypoints.map(w => txShort(w.key)).join(' ➔ ');
             const totalMins = Math.round((ghostPoints[ghostPoints.length - 1].time - ghostPoints[0].time) / 60000);
-            guideText.textContent = `🎯 AI 가상 코스: ${seqStr} | 총 ${totalDist.toFixed(1)}km / ▲${Math.round(totalEle)}m (예상: ${totalMins}분)`;
-            btnBannerRedo.style.display = 'none';
-            btnBannerBack.style.display = 'none';
-            btnBannerConfirm.style.display = 'none';
-            guideBanner.style.display = 'flex';
+            flashBanner(`🎯 가상 코스: ${seqStr} | ${ghost.distance.toFixed(1)}km / ▲${Math.round(ghost.elevationGain)}m (예상 ${totalMins}분)`, 8000);
 
             currentSimTime = globalStartTime;
             updateSimulation(currentSimTime);
@@ -2393,16 +2671,11 @@
             const unvisited = [...targets];
             const result = [];
             let current = startPt;
-
             while (unvisited.length > 0) {
-                let nearestIdx = 0;
-                let minDist = Infinity;
+                let nearestIdx = 0, minDist = Infinity;
                 for (let i = 0; i < unvisited.length; i++) {
                     const d = calculateDistance(current.lat, current.lng, unvisited[i].lat, unvisited[i].lng);
-                    if (d < minDist) {
-                        minDist = d;
-                        nearestIdx = i;
-                    }
+                    if (d < minDist) { minDist = d; nearestIdx = i; }
                 }
                 current = unvisited.splice(nearestIdx, 1)[0];
                 result.push(current);
@@ -2410,14 +2683,15 @@
             return result;
         }
 
+        // 두 지점 사이 거리 (km, 하버사인)
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // 정확도 : 높음
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
         function getBearing(startLat, startLng, destLat, destLng) {
@@ -2426,6 +2700,7 @@
                       Math.sin(startLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.cos((destLng - startLng) * Math.PI / 180);
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
+
     </script>
 </body>
 </html>
