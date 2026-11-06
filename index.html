@@ -39,21 +39,25 @@
         #runner-list-box::-webkit-scrollbar,
         #tx-list-box::-webkit-scrollbar,
         #top-scoreboard-bar::-webkit-scrollbar,
+        #sig-panel::-webkit-scrollbar,
         #split-body::-webkit-scrollbar { width: 5px; height: 5px; }
         #sidebar::-webkit-scrollbar-track,
         #runner-list-box::-webkit-scrollbar-track,
         #tx-list-box::-webkit-scrollbar-track,
         #top-scoreboard-bar::-webkit-scrollbar-track,
+        #sig-panel::-webkit-scrollbar-track,
         #split-body::-webkit-scrollbar-track { background: transparent; }
         #sidebar::-webkit-scrollbar-button,
         #runner-list-box::-webkit-scrollbar-button,
         #tx-list-box::-webkit-scrollbar-button,
         #top-scoreboard-bar::-webkit-scrollbar-button,
+        #sig-panel::-webkit-scrollbar-button,
         #split-body::-webkit-scrollbar-button { display: none !important; }
         #sidebar::-webkit-scrollbar-thumb,
         #runner-list-box::-webkit-scrollbar-thumb,
         #tx-list-box::-webkit-scrollbar-thumb,
         #top-scoreboard-bar::-webkit-scrollbar-thumb,
+        #sig-panel::-webkit-scrollbar-thumb,
         #split-body::-webkit-scrollbar-thumb {
             background: transparent; border-radius: 4px; transition: background 0.3s;
         }
@@ -61,6 +65,7 @@
         #runner-list-box:hover::-webkit-scrollbar-thumb,
         #tx-list-box:hover::-webkit-scrollbar-thumb,
         #top-scoreboard-bar:hover::-webkit-scrollbar-thumb,
+        #sig-panel:hover::-webkit-scrollbar-thumb,
         #split-body:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); }
         #sidebar::-webkit-scrollbar-thumb:hover { background: #e74c3c !important; }
 
@@ -155,6 +160,12 @@
             padding: 5px 10px; font-size: 0.72rem; font-weight: 900; cursor: pointer; min-width: 38px;
         }
         #btn-view-toggle.is-3d { background: #00cec9; }
+        #btn-probe {
+            background: #243342; color: #ecf0f1; border: none; border-left: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 9px; font-size: 0.72rem; font-weight: 900; cursor: pointer; white-space: nowrap;
+        }
+        #btn-probe:hover { background: #4a6278; }
+        #btn-probe.on { background: #8e44ad; color: #ffffff; }
         #style-switch-wrap input[type="radio"]:checked + label { background: #e74c3c; color: #ffffff; }
         #style-switch-wrap input[type="radio"]:disabled + label {
             opacity: 0.35; cursor: not-allowed; background: transparent; color: #7f8c8d;
@@ -269,6 +280,8 @@
             font-size: 0.8rem; border-left: 4px solid #fff; cursor: pointer;
         }
         .runner-item.selected { background: #1f3a52; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
+        .runner-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .runner-check { width: 17px; height: 17px; margin: 0; cursor: pointer; flex-shrink: 0; }
         .runner-info-wrap { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
         .runner-name-tag { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
         .runner-stats-tag { color: #bdc3c7; font-size: 0.72rem; }
@@ -385,6 +398,64 @@
         .iof-finish-marker::after {
             content: ''; position: absolute; inset: 3px; border-radius: 50%; border: 3px solid #8e44ad;
         }
+
+        /* 신호 탐색 핀 */
+        .probe-pin {
+            width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box;
+            border: 3px solid #ffffff; background: rgba(142, 68, 173, 0.35);
+            box-shadow: 0 0 0 2px #8e44ad, 0 3px 10px rgba(0,0,0,0.8);
+            cursor: grab; position: relative;
+        }
+        .probe-pin::after {
+            content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px;
+            transform: translate(-50%, -50%); border-radius: 50%; background: #ffffff;
+        }
+        .probe-pin:active { cursor: grabbing; }
+
+        /* 예상 수신 패널 */
+        #sig-panel {
+            position: absolute; top: 62px; left: 16px; width: 300px;
+            max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain;
+            background: rgba(26, 37, 47, 0.95); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5); color: #ecf0f1; z-index: 13;
+            display: none; flex-direction: column; box-sizing: border-box;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        .sig-head {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            padding: 8px 10px 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: sticky; top: 0; background: rgba(26, 37, 47, 0.98); z-index: 2;
+        }
+        #sig-title {
+            font-size: 0.82rem; font-weight: 800; display: flex; align-items: center; gap: 6px;
+            overflow: hidden; white-space: nowrap; min-width: 0;
+        }
+        #sig-title-text { overflow: hidden; text-overflow: ellipsis; }
+        #sig-title-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        #sig-sub { font-size: 0.68rem; color: #95a5a6; padding: 6px 12px 2px; line-height: 1.45; }
+        #sig-rows { padding: 4px 8px 4px; display: flex; flex-direction: column; gap: 1px; }
+        .sig-row {
+            display: grid; grid-template-columns: 38px 62px 1fr 70px; gap: 6px; align-items: center;
+            font-size: 0.72rem; padding: 5px 4px; border-radius: 6px; cursor: pointer;
+        }
+        .sig-row:hover { background: rgba(255,255,255,0.06); }
+        .sig-row.focus { background: rgba(255,255,255,0.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35); }
+        .sig-row.done { opacity: 0.45; }
+        .sig-row .k { font-weight: 900; white-space: nowrap; }
+        .sig-row .d { font-family: monospace; color: #dfe6e9; line-height: 1.25; white-space: nowrap; }
+        .sig-row .d small { color: #95a5a6; font-size: 0.62rem; }
+        .sig-meter { display: flex; align-items: center; gap: 5px; min-width: 0; }
+        .sig-bars { display: flex; align-items: flex-end; gap: 1px; height: 14px; flex-shrink: 0; }
+        .sig-bars span { width: 4px; background: #34495e; border-radius: 1px; }
+        .sig-bars span.on { background: #2ecc71; }
+        .sig-bars.mid span.on { background: #f1c40f; }
+        .sig-bars.low span.on { background: #e67e22; }
+        .sig-db { font-family: monospace; font-size: 0.66rem; color: #bdc3c7; white-space: nowrap; }
+        .sig-shield { text-align: right; font-weight: bold; font-size: 0.66rem; white-space: nowrap; }
+        .sig-empty { font-size: 0.72rem; color: #95a5a6; padding: 8px 4px; }
+        #sig-warn { display: none; font-size: 0.66rem; color: #ff7675; padding: 2px 12px 8px; line-height: 1.45; }
+        .sig-note { font-size: 0.62rem; color: #7f8c8d; padding: 4px 12px 10px; line-height: 1.45; border-top: 1px solid rgba(255,255,255,0.06); }
 
         /* 하단 플레이어 */
         #player-bar {
@@ -505,7 +576,7 @@
 
             #style-switch-wrap { top: 12px; right: 12px; }
             #style-switch-wrap label { padding: 4px 6px; font-size: 0.65rem; }
-            #btn-view-toggle { padding: 4px 8px; font-size: 0.65rem; }
+            #btn-view-toggle, #btn-probe { padding: 4px 8px; font-size: 0.65rem; }
 
             #top-scoreboard-bar {
                 top: 46px; right: 12px;
@@ -513,6 +584,8 @@
                 max-height: calc(100dvh - 160px);
             }
             .card-callsign { font-size: 0.72rem; }
+
+            #sig-panel { top: 58px; left: 12px; width: 280px; max-height: calc(100% - 140px); }
 
             #player-bar { bottom: 16px; padding: 6px 10px; gap: 6px; max-width: 94vw; }
             #btn-play { width: 32px; height: 32px; font-size: 0.9rem; }
@@ -535,6 +608,12 @@
                 max-height: calc(100dvh - 200px);
             }
             #guide-banner { top: 92px; }
+            #sig-panel {
+                top: 88px; width: 250px; max-width: calc(100% - 110px);
+                max-height: 42vh; max-height: 42dvh;
+            }
+            .sig-row { grid-template-columns: 34px 54px 1fr 58px; gap: 4px; font-size: 0.68rem; }
+            .sig-db { display: none; }
         }
     </style>
 </head>
@@ -596,8 +675,8 @@
             <button class="btn-action" id="btn-add-gpx">+ GPX 파일 추가하기</button>
             <div id="runner-list-box"></div>
             <div class="sub-title-row">
-                <span class="hint" style="margin:0;">선수를 누르면 전체 경로를 강조합니다</span>
-                <button class="mini-btn" id="btn-select-all">전체 선택</button>
+                <span class="hint" style="margin:0;">☑ 경로 표시 · 이름을 누르면 예상 수신</span>
+                <button class="mini-btn" id="btn-select-all">전체 해제</button>
             </div>
 
             <span class="tuning-label" style="margin-top:10px;">출발 방식</span>
@@ -617,6 +696,13 @@
                 <option value="foxoring">Foxoring</option>
                 <option value="sprint">Sprint</option>
             </select>
+            <div class="mode-switch" style="margin-top: 8px;">
+                <input type="radio" id="band-2m" name="freq-band" value="2m" checked>
+                <label for="band-2m">2m (144MHz)</label>
+                <input type="radio" id="band-80m" name="freq-band" value="80m">
+                <label for="band-80m">80m (3.5MHz)</label>
+            </div>
+            <div class="hint">Sprint·Foxoring은 80m만 사용합니다. 능선 차폐는 2m에서만 계산합니다.</div>
         </div>
 
         <!-- 5. 송신기 위치 -->
@@ -663,6 +749,7 @@
             <input type="radio" id="style-map" name="map-style" value="map" disabled>
             <label for="style-map" title="올린 종이 경기 지도">경기 지도</label>
             <button id="btn-view-toggle" title="2D(평면) / 3D(입체) 시점 전환">2D</button>
+            <button id="btn-probe" title="지도를 눌러 각 TX까지 거리·예상 신호 보기">📡 탐색</button>
         </div>
 
         <div id="guide-banner">
@@ -676,6 +763,18 @@
         </div>
 
         <div id="top-scoreboard-bar"></div>
+
+        <!-- 예상 수신 패널 (선수 위치 또는 탐색 핀 기준) -->
+        <div id="sig-panel">
+            <div class="sig-head">
+                <span id="sig-title"><i id="sig-title-dot"></i><span id="sig-title-text">📡 예상 수신</span></span>
+                <button id="btn-sig-close" class="mini-btn" title="닫기">✕</button>
+            </div>
+            <div id="sig-sub"></div>
+            <div id="sig-rows"></div>
+            <div id="sig-warn">⚠️ 고도 데이터를 불러오지 못해 능선 차폐를 계산할 수 없습니다. 네트워크 상태를 확인하거나 잠시 뒤 다시 시도해 주세요.</div>
+            <div class="sig-note">지형과 거리로 계산한 <b>예상값</b>입니다. 안테나 방향·감쇄기·수신기 이득·수목은 반영되지 않습니다. 줄을 누르면 해당 TX만 강조합니다.</div>
+        </div>
 
         <div id="player-bar">
             <button id="btn-play" title="재생/정지 (스페이스바)">▶</button>
@@ -873,6 +972,9 @@
                 paint: { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-opacity': 0.95 }
             });
 
+            // 선수(또는 탐색 핀)와 각 TX를 잇는 선 (Classic 전용)
+            addSignalLineLayers();
+
             // 선수 화살표·이름·꼬리를 하나의 데이터로 그려서 항상 같은 화면에서 함께 움직이게 함
             addArrowImage();
             map.addSource('runners-source', { type: 'geojson', data: EMPTY_FC, tolerance: 0 });
@@ -953,6 +1055,7 @@
             applyMapStyle(currentStyleMode());
             applyView(true);
             if (runners.length) updateSimulation(currentSimTime);
+            refreshSignal(true);
         });
 
         map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -988,12 +1091,12 @@
 
         // 화살표를 누르면 그 선수 전체 경로 보기/숨기기
         map.on('click', 'runner-arrows', (e) => {
-            if (isPickingMap || activeTxKey) return;
+            if (isPickingMap || activeTxKey || probeMode) return;
             const f = e.features && e.features[0];
-            if (f) toggleSelect(f.properties.rid);
+            if (f) inspectRunner(f.properties.rid, false);
         });
-        map.on('mouseenter', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey) map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey) map.getCanvas().style.cursor = ''; });
+        map.on('mouseenter', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey && !probeMode) map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'runner-arrows', () => { if (!isPickingMap && !activeTxKey && !probeMode) map.getCanvas().style.cursor = ''; });
 
         // 화살표 주변 파동 효과 (지도 레이어 방식)
         function animatePulse(now) {
@@ -1641,6 +1744,7 @@
 
         function startMapGeoreferencing() {
             clearTimeout(bannerTimer);
+            if (probeMode) setProbeMode(false);
             isPickingMap = true;
             geoState.mapStep = 3;
 
@@ -1659,7 +1763,7 @@
             isPickingMap = false;
             activeTxKey = null;
             guideBanner.style.display = 'none';
-            map.getCanvas().style.cursor = '';
+            map.getCanvas().style.cursor = probeMode ? 'crosshair' : '';
             document.querySelectorAll('.btn-tx-pick').forEach(b => b.classList.remove('active'));
 
             if (mapPin1) { mapPin1.remove(); mapPin1 = null; }
@@ -1769,7 +1873,10 @@
                 const key = activeTxKey;
                 cancelGuide();
                 setTxPosition(key, e.lngLat.lng, e.lngLat.lat);
+                return;
             }
+
+            if (probeMode) setProbePosition(e.lngLat.lng, e.lngLat.lat);
         });
 
         // 2점 정합 (이동·회전·축척) 계산 — 웹 메르카토르 평면 기준
@@ -1910,6 +2017,9 @@
         renderTxGrid('classic');
         raceTypeSelect.addEventListener('change', (e) => {
             renderTxGrid(e.target.value);
+            syncBandUI();
+            focusTxKey = null;
+            refreshSignal(true);
             if (modeGhost.checked) generateVirtualCourse();
         });
 
@@ -1942,10 +2052,12 @@
             el.title = txLabel(key);
 
             const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
-            txMarkers[key] = { key, lng, lat, marker };
+            txMarkers[key] = { key, lng, lat, marker, ele: null };
             renderTxList();
             renderTxGrid(raceTypeSelect.value);
+            warmDemForCourse();
             recomputeAll();
+            refreshSignal(true);
             if (modeGhost.checked) generateVirtualCourse();
         }
 
@@ -1953,9 +2065,11 @@
             if (!txMarkers[key]) return;
             txMarkers[key].marker.remove();
             delete txMarkers[key];
+            if (focusTxKey === key) focusTxKey = null;
             renderTxList();
             renderTxGrid(raceTypeSelect.value);
             recomputeAll();
+            refreshSignal(true);
             if (modeGhost.checked) generateVirtualCourse();
         }
 
@@ -2034,6 +2148,7 @@
 
             refreshTrackData();
             recomputeAll();
+            warmDemForCourse();
             playerBar.style.display = 'flex';
 
             if (isFirst) {
@@ -2095,7 +2210,7 @@
                 finishIdx: -1, finishTime: null,
                 visits: [],
                 distance: 0, elevationGain: 0,
-                shift: 0, lastBearing: 0, currentPos: null
+                shift: 0, lastBearing: 0, currentPos: null, currentRawT: null
             };
             r.segments = buildSegments(r);
             return r;
@@ -2106,6 +2221,7 @@
             if (idx === -1) return;
             runners.splice(idx, 1);
             selectedIds.delete(id);
+            if (inspectRunnerId === id) inspectRunnerId = null;
 
             if (runners.length === 0) {
                 playerBar.style.display = 'none';
@@ -2114,6 +2230,7 @@
             refreshTrackData();
             applyTrackFilter();
             recomputeAll();
+            refreshSignal(true);
         }
 
         // ---------- 출발·TX 통과·피니시 판정 ----------
@@ -2143,29 +2260,66 @@
             return 0;
         }
 
+        // TX 통과·비컨·피니시 판정
+        //   비컨(B)과 피니시(F)는 스타트 근처에 있는 경우가 많아서, 출발 직후 그 옆을 지나가는 것을
+        //   도착으로 잘못 보지 않도록 "찾을 TX를 모두 지난 뒤"부터 찾음
+        function firstEntry(p, from, m, R) {
+            for (let i = from; i < p.length; i++) {
+                if (distM(p[i].lat, p[i].lon, m.lat, m.lng) <= R) return i;
+            }
+            return -1;
+        }
+        // 마지막으로 반경 안에 들어온 순간 (기록 끝까지 머문 구간의 시작점)
+        function lastEntry(p, from, m, R) {
+            let last = -1;
+            for (let i = p.length - 1; i >= from; i--) {
+                const inside = distM(p[i].lat, p[i].lon, m.lat, m.lng) <= R;
+                if (inside) last = i;
+                else if (last >= 0) break;
+            }
+            return last;
+        }
+
         function detectVisits(r) {
             const p = r.points, n = p.length, R = getTxRadius(), s = r.startIdx;
             const visits = [];
-            Object.keys(txMarkers).forEach(key => {
-                if (key === 'S' || key === 'F') return;
-                const m = txMarkers[key];
-                for (let i = s; i < n; i++) {
-                    if (distM(p[i].lat, p[i].lon, m.lat, m.lng) <= R) {
-                        visits.push({ key, idx: i, time: p[i].time });
-                        break;
-                    }
-                }
+            const isTargetKey = k => !['S', 'F', 'B', 'Sp'].includes(k);
+
+            // 1) 찾을 TX: 출발 후 처음 반경 안에 들어온 순간
+            Object.keys(txMarkers).filter(isTargetKey).forEach(key => {
+                const i = firstEntry(p, s, txMarkers[key], R);
+                if (i >= 0) visits.push({ key, idx: i, time: p[i].time });
             });
+            const lastTargetIdx = visits.length ? Math.max(...visits.map(v => v.idx)) : -1;
+
+            // 2) 관람점(Sprint): 저속 루프(1~5)를 지난 뒤
+            if (txMarkers['Sp']) {
+                const slow = visits.filter(v => !v.key.endsWith('F'));
+                const from = slow.length ? Math.max(...slow.map(v => v.idx)) : s;
+                const i = firstEntry(p, from, txMarkers['Sp'], R);
+                if (i >= 0) visits.push({ key: 'Sp', idx: i, time: p[i].time });
+            }
+
+            // 3) 비컨: 찾을 TX를 모두 지난 뒤
+            let beaconIdx = -1;
+            if (txMarkers['B']) {
+                beaconIdx = lastTargetIdx >= 0
+                    ? firstEntry(p, lastTargetIdx, txMarkers['B'], R)
+                    : lastEntry(p, s, txMarkers['B'], R);
+                if (beaconIdx >= 0) visits.push({ key: 'B', idx: beaconIdx, time: p[beaconIdx].time });
+            }
             visits.sort((a, b) => a.time - b.time);
 
+            // 4) 피니시: 마지막 TX(또는 비컨) 이후 처음 들어온 순간.
+            //    TX를 하나도 못 지났으면 기록 끝 무렵 마지막으로 들어온 순간
             let finishIdx = -1;
             const F = txMarkers['F'];
             if (F) {
-                let k = visits.length ? visits[visits.length - 1].idx : s;
-                // 피니시가 스타트 근처에 있어도 오판하지 않도록, 일단 피니시에서 멀어진 뒤부터 찾음
-                while (k < n && distM(p[k].lat, p[k].lon, F.lat, F.lng) <= R * 2) k++;
-                for (let i = k; i < n; i++) {
-                    if (distM(p[i].lat, p[i].lon, F.lat, F.lng) <= R) { finishIdx = i; break; }
+                const from = Math.max(lastTargetIdx, beaconIdx);
+                if (from >= 0) {
+                    finishIdx = firstEntry(p, from, F, R);
+                } else {
+                    finishIdx = lastEntry(p, s, F, R);
                 }
             }
             r.visits = visits;
@@ -2241,27 +2395,33 @@
             if (map.getLayer('tracks-casing')) map.setFilter('tracks-casing', trackFilter());
         }
 
-        function toggleSelect(id, forceOn) {
-            if (forceOn === true) selectedIds.add(id);
-            else if (selectedIds.has(id)) selectedIds.delete(id);
-            else selectedIds.add(id);
+        // 체크박스: 경로선 보이기/숨기기 (여러 명 가능)
+        function setPathVisible(id, on) {
+            if (on) selectedIds.add(id); else selectedIds.delete(id);
             applyTrackFilter();
             renderRunnerList();
-            renderScoreCards();
             if (runners.length) updateSimulation(currentSimTime);
         }
 
-        document.getElementById('btn-select-all').addEventListener('click', () => {
-            const allOn = runners.length > 0 && runners.every(r => selectedIds.has(r.id));
-            selectedIds = allOn ? new Set() : new Set(runners.map(r => r.id));
-            toggleSelectRefresh();
-        });
-        function toggleSelectRefresh() {
-            applyTrackFilter();
+        // 이름·카드·화살표 클릭: 예상 수신 패널을 그 선수 기준으로 (경로선과는 별개)
+        function inspectRunner(id, fly) {
+            if (probeMode) setProbeMode(false);
+            inspectRunnerId = id;
+            focusTxKey = null;
             renderRunnerList();
             renderScoreCards();
             if (runners.length) updateSimulation(currentSimTime);
+            refreshSignal(true);
+            const r = runners.find(x => x.id === id);
+            if (fly && r && r.currentPos) map.easeTo({ center: [r.currentPos.lon, r.currentPos.lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
         }
+
+        document.getElementById('btn-select-all').addEventListener('click', () => {
+            selectedIds = new Set();
+            applyTrackFilter();
+            renderRunnerList();
+            if (runners.length) updateSimulation(currentSimTime);
+        });
 
         startModeSelect.addEventListener('change', () => {
             currentSimTime = -Infinity;
@@ -2290,20 +2450,33 @@
             runnerListBox.innerHTML = '';
             runners.forEach((r) => {
                 const item = document.createElement('div');
-                item.className = 'runner-item' + (selectedIds.has(r.id) ? ' selected' : '');
+                item.className = 'runner-item' + (inspectRunnerId === r.id ? ' selected' : '');
                 item.style.borderLeftColor = r.color;
-                item.title = '눌러서 전체 경로 보기/숨기기';
+                item.title = '이름을 누르면 이 선수 기준으로 예상 수신을 봅니다';
+
+                const left = document.createElement('div');
+                left.className = 'runner-left';
+
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.className = 'runner-check';
+                chk.checked = selectedIds.has(r.id);
+                chk.style.accentColor = r.color;
+                chk.title = '경로선 보이기/숨기기';
+                chk.addEventListener('click', (e) => e.stopPropagation());
+                chk.addEventListener('change', () => setPathVisible(r.id, chk.checked));
 
                 const info = document.createElement('div');
                 info.className = 'runner-info-wrap';
                 const nm = document.createElement('span');
                 nm.className = 'runner-name-tag';
                 nm.style.color = r.color;
-                nm.textContent = (selectedIds.has(r.id) ? '● ' : '') + r.name;
+                nm.textContent = (inspectRunnerId === r.id ? '📡 ' : '') + r.name;
                 const st = document.createElement('span');
                 st.className = 'runner-stats-tag';
                 st.textContent = runnerStatsText(r);
                 info.append(nm, st);
+                left.append(chk, info);
 
                 const del = document.createElement('button');
                 del.className = 'btn-del-item';
@@ -2315,8 +2488,8 @@
                     else deleteRunner(r.id);
                 });
 
-                item.addEventListener('click', () => toggleSelect(r.id));
-                item.append(info, del);
+                item.addEventListener('click', () => inspectRunner(r.id, true));
+                item.append(left, del);
                 runnerListBox.appendChild(item);
             });
         }
@@ -2325,7 +2498,7 @@
             topScoreboardBar.innerHTML = '';
             runners.forEach((r) => {
                 const card = document.createElement('div');
-                card.className = 'runner-score-card' + (selectedIds.has(r.id) ? ' selected' : '');
+                card.className = 'runner-score-card' + (inspectRunnerId === r.id ? ' selected' : '');
                 const dot = document.createElement('div');
                 dot.className = 'card-color-dot';
                 dot.style.background = r.color;
@@ -2340,10 +2513,7 @@
 
                 card.addEventListener('mouseenter', () => { hoverRunnerId = r.id; updateSimulation(currentSimTime); });
                 card.addEventListener('mouseleave', () => { hoverRunnerId = null; updateSimulation(currentSimTime); });
-                card.addEventListener('click', () => {
-                    if (!selectedIds.has(r.id)) toggleSelect(r.id, true);
-                    if (r.currentPos) map.easeTo({ center: [r.currentPos.lon, r.currentPos.lat], zoom: 15.5, duration: 900 });
-                });
+                card.addEventListener('click', () => inspectRunner(r.id, true));
                 topScoreboardBar.appendChild(card);
             });
         }
@@ -2389,6 +2559,7 @@
             runners.forEach(r => {
                 const p = r.points;
                 const rawT = simTime + r.shift;
+                r.currentRawT = rawT;
                 if (rawT < p[0].time) {
                     r.currentPos = null;
                     return;
@@ -2416,7 +2587,7 @@
                     properties: {
                         rid: r.id, name: r.name, color: r.color,
                         bearing: r.lastBearing, finished,
-                        big: selectedIds.has(r.id) || hoverRunnerId === r.id
+                        big: selectedIds.has(r.id) || hoverRunnerId === r.id || inspectRunnerId === r.id
                     },
                     geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] }
                 });
@@ -2431,6 +2602,8 @@
             raceClock.textContent = startModeSelect.value === 'real'
                 ? new Date(simTime).toLocaleTimeString('ko-KR', { hour12: false })
                 : fmtDur(simTime - raceZeroTime);
+
+            refreshSignal();
         }
 
         function playTrack() {
@@ -2504,9 +2677,11 @@
             if (gIdx === -1) return;
             runners.splice(gIdx, 1);
             selectedIds.delete(GHOST_ID);
+            if (inspectRunnerId === GHOST_ID) inspectRunnerId = null;
             refreshTrackData();
             applyTrackFilter();
             recomputeAll();
+            refreshSignal(true);
             if (runners.length === 0) playerBar.style.display = 'none';
         }
 
@@ -2614,6 +2789,11 @@
                 }
             }
 
+            // 고도 타일을 직접 받아 계산 (지도 화면 상태와 무관하게 항상 같은 값)
+            let w = Infinity, s = Infinity, ea = -Infinity, n = -Infinity;
+            routeCoords.forEach(c => { w = Math.min(w, c[0]); ea = Math.max(ea, c[0]); s = Math.min(s, c[1]); n = Math.max(n, c[1]); });
+            await preloadDem(w - 0.003, s - 0.003, ea + 0.003, n + 0.003);
+
             const real = runners.filter(r => r.id !== GHOST_ID);
             let simTimeCursor = real.length ? Math.min(...real.map(r => r.startTime)) : Date.now();
             const PACE_SEC_PER_KM = 360;
@@ -2622,12 +2802,8 @@
 
             for (let i = 0; i < routeCoords.length; i++) {
                 const [cLng, cLat] = routeCoords[i];
-                // 과장 배율이 빠진 실제 고도 (지형이 꺼져 있거나 타일이 없으면 직전 값 사용)
-                let ele = lastEle;
-                if (map.queryTerrainElevation) {
-                    const terr = map.queryTerrainElevation([cLng, cLat], { exaggerated: false });
-                    if (terr !== null && terr !== undefined) ele = terr;
-                }
+                let ele = demElevation(cLng, cLat);
+                if (ele === null || ele === undefined) ele = lastEle;
                 lastEle = ele;
 
                 if (ghostPoints.length > 0) {
@@ -2683,6 +2859,591 @@
             return result;
         }
 
+        // ==========================================
+        // 지형 고도: 고도 타일을 직접 읽음 (시뮬레이터와 같은 방식)
+        //   TX·GPX가 들어오면 그 위치 기준으로 필요한 조각만 받아 둠
+        // ==========================================
+        const DEM_Z = 14;
+        const demTiles = new Map();
+        const demStatus = { ok: 0, failed: 0 };
+        let demVersion = 0;
+
+        function lngLatToTileXY(lng, lat, z) {
+            const n = Math.pow(2, z);
+            const latR = lat * Math.PI / 180;
+            return {
+                x: (lng + 180) / 360 * n,
+                y: (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n
+            };
+        }
+
+        // 고도 타일 출처 (위에서부터 차례로 시도)
+        //   1) Mapbox terrain-dem-v1  2) Mapbox terrain-rgb  3) AWS 공개 고도 타일(Terrarium, 토큰 불필요)
+        //   Mapbox가 429(요청 과다)·403(토큰 제한)으로 거절해도 3번으로 계산을 이어감
+        const decodeMapbox = (r, g, b) => -10000 + (r * 65536 + g * 256 + b) * 0.1;
+        const decodeTerrarium = (r, g, b) => (r * 256 + g + b / 256) - 32768;
+        const DEM_SOURCES = [
+            { name: 'mapbox-dem', decode: decodeMapbox,
+              url: (x, y) => `https://api.mapbox.com/v4/mapbox.mapbox-terrain-dem-v1/${DEM_Z}/${x}/${y}.pngraw?access_token=${mapboxgl.accessToken}` },
+            { name: 'mapbox-rgb', decode: decodeMapbox,
+              url: (x, y) => `https://api.mapbox.com/v4/mapbox.terrain-rgb/${DEM_Z}/${x}/${y}.pngraw?access_token=${mapboxgl.accessToken}` },
+            { name: 'terrarium', decode: decodeTerrarium,
+              url: (x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${DEM_Z}/${x}/${y}.png` }
+        ];
+        // 한 번 거절당한 출처는 이번 페이지에서는 건너뜀 (같은 오류 반복 방지)
+        const demSourceBlocked = new Set();
+
+        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+        // 동시에 너무 많이 요청하지 않도록 4개씩만 받음
+        const DEM_MAX_PARALLEL = 4;
+        let demActive = 0;
+        const demQueue = [];
+        function demSlot() {
+            if (demActive < DEM_MAX_PARALLEL) { demActive++; return Promise.resolve(); }
+            return new Promise(res => demQueue.push(res));
+        }
+        function demRelease() {
+            const next = demQueue.shift();
+            if (next) next(); else demActive--;
+        }
+
+        // fetch로 받아서 상태 코드를 확인하고, 픽셀을 고도로 바꿈
+        async function fetchDemTile(src, x, y) {
+            for (let attempt = 0; attempt < 2; attempt++) {
+                let res;
+                try {
+                    res = await fetch(src.url(x, y), { mode: 'cors' });
+                } catch (err) {
+                    return { tile: null, status: 0 };
+                }
+                if (res.status === 429 && attempt === 0) {
+                    await sleep(1500);
+                    continue;
+                }
+                if (!res.ok) return { tile: null, status: res.status };
+                try {
+                    const blob = await res.blob();
+                    const bmp = await createImageBitmap(blob);
+                    const c = document.createElement('canvas');
+                    c.width = bmp.width; c.height = bmp.height;
+                    const ctx = c.getContext('2d', { willReadFrequently: true });
+                    ctx.drawImage(bmp, 0, 0);
+                    if (bmp.close) bmp.close();
+                    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+                    const arr = new Float32Array(c.width * c.height);
+                    for (let i = 0; i < arr.length; i++) {
+                        arr[i] = src.decode(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]);
+                    }
+                    return { tile: { size: c.width, data: arr, source: src.name }, status: res.status };
+                } catch (err) {
+                    console.warn('고도 타일 읽기 실패:', err);
+                    return { tile: null, status: -1 };
+                }
+            }
+            return { tile: null, status: 429 };
+        }
+
+        function loadDemTile(tx, ty) {
+            const key = `${tx}/${ty}`;
+            if (demTiles.has(key)) {
+                const v = demTiles.get(key);
+                return v instanceof Promise ? v : Promise.resolve();
+            }
+            const p = (async () => {
+                await demSlot();
+                try {
+                    for (const src of DEM_SOURCES) {
+                        if (demSourceBlocked.has(src.name)) continue;
+                        const { tile, status } = await fetchDemTile(src, tx, ty);
+                        if (tile) {
+                            demTiles.set(key, tile);
+                            demStatus.ok++;
+                            demStatus.lastSource = src.name;
+                            return;
+                        }
+                        // 요청 과다·권한 거절이면 이 출처는 더 이상 쓰지 않음
+                        if (status === 429 || status === 401 || status === 403) {
+                            if (!demSourceBlocked.has(src.name)) {
+                                console.warn(`고도 타일 출처 ${src.name} 거절됨(${status}) → 다음 출처 사용`);
+                                demSourceBlocked.add(src.name);
+                            }
+                        }
+                    }
+                    console.warn('고도 타일을 불러오지 못했습니다:', key);
+                    demTiles.set(key, null);
+                    demStatus.failed++;
+                    // 일시적인 문제일 수 있으므로 1분 뒤에는 다시 시도할 수 있게 비워 둠
+                    setTimeout(() => { if (demTiles.get(key) === null) demTiles.delete(key); }, 60000);
+                } finally {
+                    demRelease();
+                }
+            })();
+            demTiles.set(key, p);
+            return p;
+        }
+
+        function demTileRange(west, south, east, north) {
+            const a = lngLatToTileXY(west, north, DEM_Z), b = lngLatToTileXY(east, south, DEM_Z);
+            return { x0: Math.floor(a.x), x1: Math.floor(b.x), y0: Math.floor(a.y), y1: Math.floor(b.y) };
+        }
+
+        function preloadDem(west, south, east, north) {
+            const r = demTileRange(west, south, east, north);
+            const jobs = [];
+            for (let x = r.x0; x <= r.x1; x++) {
+                for (let y = r.y0; y <= r.y1; y++) {
+                    if (jobs.length < 64) jobs.push(loadDemTile(x, y));
+                }
+            }
+            return Promise.all(jobs);
+        }
+
+        // 범위 안의 조각을 모두 받아 두었는지 (실패한 조각도 '시도 끝'으로 봄)
+        function demReady(west, south, east, north) {
+            const r = demTileRange(west, south, east, north);
+            for (let x = r.x0; x <= r.x1; x++) {
+                for (let y = r.y0; y <= r.y1; y++) {
+                    const key = `${x}/${y}`;
+                    if (!demTiles.has(key) || demTiles.get(key) instanceof Promise) return false;
+                }
+            }
+            return true;
+        }
+
+        function demElevation(lng, lat) {
+            const t = lngLatToTileXY(lng, lat, DEM_Z);
+            const tx = Math.floor(t.x), ty = Math.floor(t.y);
+            const tile = demTiles.get(`${tx}/${ty}`);
+            if (!tile || tile instanceof Promise) {
+                if (map.getTerrain && map.getTerrain()) {
+                    const e = map.queryTerrainElevation([lng, lat], { exaggerated: false });
+                    if (e !== null && e !== undefined) return e;
+                }
+                return null;
+            }
+            const S = tile.size;
+            const px = Math.min(S - 1.001, Math.max(0, (t.x - tx) * S - 0.5));
+            const py = Math.min(S - 1.001, Math.max(0, (t.y - ty) * S - 0.5));
+            const x0 = Math.floor(px), y0 = Math.floor(py);
+            const fx = px - x0, fy = py - y0;
+            const d = tile.data;
+            const v00 = d[y0 * S + x0], v10 = d[y0 * S + x0 + 1];
+            const v01 = d[(y0 + 1) * S + x0], v11 = d[(y0 + 1) * S + x0 + 1];
+            return (v00 * (1 - fx) + v10 * fx) * (1 - fy) + (v01 * (1 - fx) + v11 * fx) * fy;
+        }
+
+        // TX·GPX가 바뀌면 그 범위(+약 1km 여유)의 고도 조각을 미리 받아 둠
+        function warmDemForCourse() {
+            let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+            const add = (lng, lat) => { w = Math.min(w, lng); e = Math.max(e, lng); s = Math.min(s, lat); n = Math.max(n, lat); };
+            Object.values(txMarkers).forEach(t => add(t.lng, t.lat));
+            runners.forEach(r => {
+                const step = Math.max(1, Math.floor(r.points.length / 400));
+                for (let i = 0; i < r.points.length; i += step) add(r.points[i].lon, r.points[i].lat);
+            });
+            if (!isFinite(w)) return;
+            const pad = 0.01;
+            preloadDem(w - pad, s - pad, e + pad, n + pad).then(() => {
+                demVersion++;
+                Object.values(txMarkers).forEach(t => { if (t.ele == null) t.ele = demElevation(t.lng, t.lat); });
+                refreshSignal(true);
+            });
+        }
+
+        // ==========================================
+        // 전파 모델 (시뮬레이터와 같은 근사식)
+        //   2m  : 거리 감쇄 + 능선 회절 손실(ITU-R P.526 단일 나이프 에지)
+        //   80m : 거리 감쇄만 (지표파라 능선 영향 무시)
+        //   Foxoring : 약 250m 밖에서는 들리지 않음
+        //   값은 "안테나를 TX 쪽으로 맞췄을 때"의 예상 세기
+        // ==========================================
+        const FOX_RANGE_M = 250;
+        const band2mRadio = document.getElementById('band-2m');
+        const band80mRadio = document.getElementById('band-80m');
+
+        function currentRace() { return raceTypeSelect.value; }
+        function currentBand() { return currentRace() === 'classic' && band2mRadio.checked ? '2m' : '80m'; }
+        function syncBandUI() {
+            const classic = currentRace() === 'classic';
+            band2mRadio.disabled = !classic;
+            if (!classic) band80mRadio.checked = true;
+        }
+        document.querySelectorAll('input[name="freq-band"]').forEach(r => r.addEventListener('change', () => {
+            focusTxKey = null;
+            refreshSignal(true);
+        }));
+        syncBandUI();
+
+        function diffractionLoss2m(p, tx) {
+            const lambda = 2.07;
+            if (p.ele == null || tx.ele == null) return { loss: 0, known: false };
+            const h1 = p.ele + 1.5, h2 = tx.ele + 1.0;
+            const D = distM(p.lat, p.lon, tx.lat, tx.lng);
+            if (D < 20) return { loss: 0, known: true };
+            const n = Math.max(8, Math.min(48, Math.floor(D / 25)));
+            let vMax = -Infinity;
+            for (let i = 1; i < n; i++) {
+                const t = i / n;
+                const g = demElevation(p.lon + (tx.lng - p.lon) * t, p.lat + (tx.lat - p.lat) * t);
+                if (g == null) continue;
+                const h = g - (h1 + (h2 - h1) * t);
+                const d1 = D * t, d2 = D * (1 - t);
+                const v = h * Math.sqrt(2 * D / (lambda * d1 * d2));
+                if (v > vMax) vMax = v;
+            }
+            if (!isFinite(vMax)) return { loss: 0, known: false };
+            if (vMax <= -0.78) return { loss: 0, known: true };
+            const J = 6.9 + 20 * Math.log10(Math.sqrt(Math.pow(vMax - 0.1, 2) + 1) + vMax - 0.1);
+            return { loss: Math.max(0, J), known: true };
+        }
+
+        // 수신 세기(근사 dB) = 송신 출력 − 거리 감쇄 − 능선 차폐
+        function signalAt(p, tx) {
+            const d = Math.max(5, distM(p.lat, p.lon, tx.lat, tx.lng));
+            const race = currentRace(), band = currentBand();
+            if (race === 'foxoring') {
+                const level = d >= FOX_RANGE_M ? 0 : Math.pow((FOX_RANGE_M - d) / FOX_RANGE_M, 2);
+                return { level, audible: level > 0, db: null, loss: 0, shield: null, known: true, dist: d };
+            }
+            const powerDbm = race === 'sprint' ? 27 : (band === '2m' ? 30 : 34.8);
+            let loss = 0, shield = null, known = true;
+            if (band === '2m') {
+                const r = diffractionLoss2m(p, tx);
+                loss = r.loss;
+                known = r.known;
+                shield = !known ? '알 수 없음' : (loss < 3 ? '없음' : (loss < 12 ? '약함' : '강함'));
+            }
+            const db = powerDbm - 20 * Math.log10(d) - loss;
+            const level = Math.max(0, Math.min(1, (db + 55) / 45));
+            return { level, audible: db > -90, db, loss, shield, known, dist: d };
+        }
+
+        // ==========================================
+        // 예상 수신 패널 + TX 연결선
+        //   기준 위치: 탐색 핀(탐색 모드) > 선택한 선수의 현재 위치
+        // ==========================================
+        const TX_PALETTE = ['#e74c3c', '#2980b9', '#8e44ad', '#e67e22', '#16a085', '#c0392b', '#2c3e50', '#d35400', '#27ae60', '#7f8c8d'];
+        function txColor(key) {
+            if (key === 'B') return '#d35400';
+            const n = parseInt(key, 10);
+            return isNaN(n) ? '#f39c12' : TX_PALETTE[(n - 1) % TX_PALETTE.length];
+        }
+
+        const sigPanel = document.getElementById('sig-panel');
+        const sigTitleText = document.getElementById('sig-title-text');
+        const sigTitleDot = document.getElementById('sig-title-dot');
+        const sigSub = document.getElementById('sig-sub');
+        const sigRowsBox = document.getElementById('sig-rows');
+        const btnProbe = document.getElementById('btn-probe');
+
+        let inspectRunnerId = null;
+        let probeMode = false;
+        let probeMarker = null;
+        let probePos = null;
+        let focusTxKey = null;
+        let sigRafPending = false;
+        let sigLastKey = '';
+        let demWaiting = false;
+
+        function addSignalLineLayers() {
+            if (map.getSource('signal-lines-source')) return;
+            map.addSource('signal-lines-source', { type: 'geojson', data: EMPTY_FC });
+            map.addLayer({
+                id: 'sig-line-solid',
+                type: 'line',
+                source: 'signal-lines-source',
+                filter: ['!', ['get', 'dash']],
+                layout: { 'line-cap': 'round' },
+                paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] }
+            });
+            map.addLayer({
+                id: 'sig-line-dash',
+                type: 'line',
+                source: 'signal-lines-source',
+                filter: ['get', 'dash'],
+                paint: {
+                    'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'],
+                    'line-dasharray': [2, 1.6]
+                }
+            });
+        }
+
+        // 지금 패널이 기준으로 삼는 위치
+        function signalPoint() {
+            if (probeMode && probePos) {
+                return { kind: 'probe', lat: probePos.lat, lon: probePos.lon, found: new Set() };
+            }
+            if (inspectRunnerId === null) return null;
+            const r = runners.find(x => x.id === inspectRunnerId);
+            if (!r) { inspectRunnerId = null; return null; }
+            if (!r.currentPos) return { kind: 'runner', r, notStarted: true };
+            const rawT = r.currentRawT;
+            const found = new Set(r.visits.filter(v => v.time <= rawT).map(v => v.key));
+            return { kind: 'runner', r, lat: r.currentPos.lat, lon: r.currentPos.lon, heading: r.lastBearing, found };
+        }
+
+        // 현재 종목에 해당하는 송신기 (스타트·피니시·관람점 제외)
+        function signalKeys() {
+            return TX_CONFIGS[currentRace()].map(c => c.key)
+                .filter(k => txMarkers[k] && !['S', 'F', 'Sp'].includes(k));
+        }
+
+        function refreshSignal(force) {
+            if (force) sigLastKey = '';
+            if (sigRafPending) return;
+            sigRafPending = true;
+            requestAnimationFrame(() => {
+                sigRafPending = false;
+                renderSignal();
+            });
+        }
+
+        function setSignalLines(fc) {
+            const src = map.getSource('signal-lines-source');
+            if (src) src.setData(fc);
+        }
+
+        // 2m 계산에 필요한 고도 조각이 없으면 받아온 뒤 다시 그림
+        function ensureDemFor(pt, keys) {
+            if (currentBand() !== '2m') return true;
+            let w = pt.lon, e = pt.lon, s = pt.lat, n = pt.lat;
+            keys.forEach(k => {
+                const t = txMarkers[k];
+                w = Math.min(w, t.lng); e = Math.max(e, t.lng); s = Math.min(s, t.lat); n = Math.max(n, t.lat);
+            });
+            const pad = 0.003;
+            if (demReady(w - pad, s - pad, e + pad, n + pad)) return true;
+            if (!demWaiting) {
+                demWaiting = true;
+                preloadDem(w - pad, s - pad, e + pad, n + pad).then(() => {
+                    demWaiting = false;
+                    demVersion++;
+                    Object.values(txMarkers).forEach(t => { if (t.ele == null) t.ele = demElevation(t.lng, t.lat); });
+                    refreshSignal(true);
+                });
+            }
+            return false;
+        }
+
+        function fmtDist(m) {
+            return m >= 1000 ? (m / 1000).toFixed(2) + 'km' : Math.round(m) + 'm';
+        }
+        function fmtAz(a) {
+            return String(Math.round(a) % 360).padStart(3, '0') + '°';
+        }
+
+        function renderSignal() {
+            const pt = signalPoint();
+            if (!pt) {
+                sigPanel.style.display = 'none';
+                setSignalLines(EMPTY_FC);
+                sigLastKey = '';
+                return;
+            }
+            sigPanel.style.display = 'flex';
+
+            const race = currentRace(), band = currentBand();
+            const raceName = { classic: 'Classic', sprint: 'Sprint', foxoring: 'Foxoring' }[race];
+            const keys = signalKeys();
+
+            // 제목
+            if (pt.kind === 'probe') {
+                sigTitleText.textContent = '📡 탐색 지점';
+                sigTitleDot.style.display = 'none';
+            } else {
+                sigTitleText.textContent = pt.r.name;
+                sigTitleDot.style.display = 'inline-block';
+                sigTitleDot.style.background = pt.r.color;
+            }
+
+            if (pt.notStarted) {
+                const k0 = `wait|${pt.r.id}`;
+                if (sigLastKey === k0) return;
+                sigLastKey = k0;
+                sigSub.textContent = `${raceName} · ${band} · 아직 출발 전입니다`;
+                sigRowsBox.innerHTML = '';
+                setSignalLines(EMPTY_FC);
+                return;
+            }
+
+            const ready = ensureDemFor(pt, keys);
+            const cacheKey = [race, band, pt.kind, pt.lat.toFixed(5), pt.lon.toFixed(5),
+                [...pt.found].join(','), keys.join(','), demVersion, ready, focusTxKey, Math.round(pt.heading || 0)].join('|');
+            if (cacheKey === sigLastKey) return;
+            sigLastKey = cacheKey;
+
+            // 부제
+            if (pt.kind === 'probe') {
+                sigSub.textContent = `${raceName} · ${band} · ${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)} · 핀을 끌어 이동`;
+            } else {
+                const nFound = keys.filter(k => pt.found.has(k)).length;
+                sigSub.textContent = `${raceName} · ${band} · 진행 방향 ${fmtAz(pt.heading)} · 찾은 TX ${nFound}/${keys.length}`;
+            }
+
+            // 계산
+            const pEle = band === '2m' ? demElevation(pt.lon, pt.lat) : null;
+            const p = { lat: pt.lat, lon: pt.lon, ele: pEle };
+            const rows = keys.map(k => {
+                const m = txMarkers[k];
+                if (band === '2m' && m.ele == null) m.ele = demElevation(m.lng, m.lat);
+                const sig = signalAt(p, m);
+                return { key: k, m, sig, az: getBearing(p.lat, p.lon, m.lat, m.lng), done: pt.found.has(k) };
+            });
+
+            // 고도 데이터를 전혀 못 받은 경우 안내
+            document.getElementById('sig-warn').style.display =
+                (band === '2m' && ready && rows.some(r => !r.sig.known)) ? 'block' : 'none';
+
+            // 패널 표
+            sigRowsBox.innerHTML = '';
+            if (rows.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'sig-empty';
+                empty.textContent = '사이드바 5번에서 송신기(TX) 위치를 먼저 지정해 주세요.';
+                sigRowsBox.appendChild(empty);
+            }
+            rows.forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'sig-row' + (r.done ? ' done' : '') + (focusTxKey === r.key ? ' focus' : '');
+
+                const k = document.createElement('span');
+                k.className = 'k';
+                k.style.color = txColor(r.key);
+                k.textContent = r.key === 'B' ? '비컨' : 'TX ' + r.key;
+
+                const d = document.createElement('span');
+                d.className = 'd';
+                d.append(fmtDist(r.sig.dist));
+                d.appendChild(document.createElement('br'));
+                const az = document.createElement('small');
+                az.textContent = '방위 ' + fmtAz(r.az);
+                d.appendChild(az);
+
+                const meter = document.createElement('span');
+                meter.className = 'sig-meter';
+                const bars = document.createElement('span');
+                const level = r.sig.audible ? r.sig.level : 0;
+                const nOn = level <= 0 ? 0 : Math.max(1, Math.ceil(level * 8));
+                bars.className = 'sig-bars' + (nOn <= 3 ? ' low' : (nOn <= 5 ? ' mid' : ''));
+                for (let i = 0; i < 8; i++) {
+                    const b = document.createElement('span');
+                    b.style.height = (4 + i * 1.4) + 'px';
+                    if (i < nOn) b.className = 'on';
+                    bars.appendChild(b);
+                }
+                const db = document.createElement('span');
+                db.className = 'sig-db';
+                if (race === 'foxoring') db.textContent = '';
+                else db.textContent = r.sig.audible ? `${Math.round(r.sig.db)}dB` : '안 들림';
+                meter.append(bars, db);
+
+                const sh = document.createElement('span');
+                sh.className = 'sig-shield';
+                if (r.done) {
+                    sh.textContent = '✓ 찾음';
+                    sh.style.color = '#2ecc71';
+                } else if (race === 'foxoring') {
+                    sh.textContent = r.sig.audible ? '들림' : '범위 밖';
+                    sh.style.color = r.sig.audible ? '#2ecc71' : '#7f8c8d';
+                } else if (band !== '2m') {
+                    sh.textContent = '지표파';
+                    sh.style.color = '#7f8c8d';
+                } else if (!r.sig.known) {
+                    sh.textContent = ready ? '알 수 없음' : '계산 중…';
+                    sh.style.color = '#7f8c8d';
+                } else {
+                    sh.textContent = '차폐 ' + r.sig.shield + (r.sig.loss >= 1 ? ` −${Math.round(r.sig.loss)}` : '');
+                    sh.style.color = r.sig.shield === '강함' ? '#ff7675' : (r.sig.shield === '약함' ? '#f39c12' : '#2ecc71');
+                }
+
+                row.append(k, d, meter, sh);
+                row.addEventListener('click', () => {
+                    focusTxKey = focusTxKey === r.key ? null : r.key;
+                    refreshSignal(true);
+                });
+                sigRowsBox.appendChild(row);
+            });
+
+            // TX 연결선: Classic 전용, 못 찾은 TX만
+            if (race !== 'classic') { setSignalLines(EMPTY_FC); return; }
+            const feats = [];
+            rows.filter(r => !r.done).forEach(r => {
+                let color = txColor(r.key), dash = false, width = 2, opacity = 0.85;
+                if (band === '2m') {
+                    if (!r.sig.known) { color = '#95a5a6'; dash = true; opacity = 0.6; }
+                    else if (r.sig.shield === '강함') { color = '#ff4d4d'; dash = true; }
+                    else if (r.sig.shield === '약함') { color = '#f39c12'; dash = true; }
+                } else {
+                    width = 1.2; opacity = 0.5;
+                }
+                if (focusTxKey) {
+                    if (focusTxKey === r.key) { width += 1.5; opacity = 1; }
+                    else opacity = 0.12;
+                }
+                feats.push({
+                    type: 'Feature',
+                    properties: { color, dash, width, opacity },
+                    geometry: { type: 'LineString', coordinates: [[pt.lon, pt.lat], [r.m.lng, r.m.lat]] }
+                });
+            });
+            setSignalLines({ type: 'FeatureCollection', features: feats });
+        }
+
+        // ---------- 신호 탐색 모드 ----------
+        function setProbeMode(on) {
+            probeMode = on;
+            btnProbe.classList.toggle('on', on);
+            if (on) {
+                if (activeTxKey) cancelGuide();
+                map.getCanvas().style.cursor = 'crosshair';
+                if (!probePos) flashBanner('📡 지도에서 확인할 지점을 누르세요 (핀을 끌면 값이 바뀝니다)', 3000);
+            } else {
+                if (probeMarker) { probeMarker.remove(); probeMarker = null; }
+                probePos = null;
+                if (!isPickingMap && !activeTxKey) map.getCanvas().style.cursor = '';
+            }
+            focusTxKey = null;
+            refreshSignal(true);
+        }
+
+        function setProbePosition(lng, lat) {
+            probePos = { lat, lon: lng };
+            if (!probeMarker) {
+                const el = document.createElement('div');
+                el.className = 'probe-pin';
+                el.title = '탐색 지점 (끌어서 이동)';
+                probeMarker = new mapboxgl.Marker({ element: el, draggable: true }).setLngLat([lng, lat]).addTo(map);
+                probeMarker.on('drag', () => {
+                    const ll = probeMarker.getLngLat();
+                    probePos = { lat: ll.lat, lon: ll.lng };
+                    refreshSignal();
+                });
+            } else {
+                probeMarker.setLngLat([lng, lat]);
+            }
+            refreshSignal(true);
+        }
+
+        btnProbe.addEventListener('click', () => {
+            if (isPickingMap) return;
+            setProbeMode(!probeMode);
+        });
+
+        document.getElementById('btn-sig-close').addEventListener('click', () => {
+            if (probeMode) {
+                setProbeMode(false);
+            } else {
+                inspectRunnerId = null;
+                renderRunnerList();
+                renderScoreCards();
+                refreshSignal(true);
+            }
+        });
+
+        // ==========================================
+        // 계산 도우미
+        // ==========================================
         // 두 지점 사이 거리 (km, 하버사인)
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371;
