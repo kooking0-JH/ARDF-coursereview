@@ -459,15 +459,14 @@
 
         /* 하단 플레이어 */
         #player-bar {
-            position: absolute; bottom: 25px; left: 50%;
-            transform: translateX(-50%);
+            position: absolute; bottom: 34px; left: 16px;
             background: rgba(33, 47, 61, 0.95); backdrop-filter: blur(6px);
             padding: 8px 14px; border-radius: 35px;
             display: none; align-items: center; gap: 10px;
             color: #ecf0f1; box-shadow: 0 8px 25px rgba(0,0,0,0.45);
             z-index: 5;
             width: calc(100% - 32px);
-            max-width: 560px;
+            max-width: 400px;
             box-sizing: border-box;
         }
         #btn-play {
@@ -587,7 +586,7 @@
 
             #sig-panel { top: 58px; left: 12px; width: 280px; max-height: calc(100% - 140px); }
 
-            #player-bar { bottom: 16px; padding: 6px 10px; gap: 6px; max-width: 94vw; }
+            #player-bar { bottom: 30px; left: 12px; width: calc(100% - 24px); padding: 6px 10px; gap: 6px; max-width: 360px; }
             #btn-play { width: 32px; height: 32px; font-size: 0.9rem; }
             #race-clock { min-width: 48px; font-size: 0.72rem; }
             #speed-select { font-size: 0.72rem; padding: 3px 4px; }
