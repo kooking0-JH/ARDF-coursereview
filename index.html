@@ -2117,6 +2117,7 @@
         const startModeSelect = document.getElementById('start-mode');
         const TAIL_MS = 30000;          // 이동 꼬리 길이: 30초
         const START_GAP_MS = 60000;     // 1분 간격 출발
+        const START_WINDOW_MS = 30 * 60000; // 스타트 반경 진입을 출발로 인정하는 기록 초반 구간
         let hoverRunnerId = null;
         const modeGpx = document.getElementById('mode-gpx');
         const modeGhost = document.getElementById('mode-ghost');
@@ -2243,7 +2244,10 @@
                 for (let i = 0; i < n; i++) {
                     if (distM(p[i].lat, p[i].lon, S.lat, S.lng) <= R) { entered = i; break; }
                 }
-                if (entered >= 0) {
+                // 기록 시작 후 30분 안에 들어온 경우만 출발로 인정.
+                // 그 뒤의 진입은 경기 중·피니시 직전에 스타트 옆을 지나간 것으로 보고 무시
+                // (기록을 켜고 바로 출발했거나 중간부터 기록한 선수 대응)
+                if (entered >= 0 && p[entered].time - p[0].time <= START_WINDOW_MS) {
                     for (let j = entered; j < n; j++) {
                         if (distM(p[j].lat, p[j].lon, S.lat, S.lng) > R) return Math.max(0, j - 1);
                     }
